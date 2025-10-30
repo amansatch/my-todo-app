@@ -11,7 +11,6 @@ for key in ["logged_out", "login_user", "login_pass", "reg_user", "reg_pass"]:
 
 # --- Login & Registration ---
 st.sidebar.title("🔐 Account Access")
-
 login_tab, register_tab = st.sidebar.tabs(["Login", "Register"])
 
 with login_tab:
@@ -20,7 +19,7 @@ with login_tab:
     if st.button("🔓 Login"):
         if functions.authenticate(username, password):
             st.session_state["username"] = username
-            st.success(f"Welcome back, {username}!")
+            st.rerun()
         else:
             st.error("Invalid username or password.")
 
@@ -41,6 +40,8 @@ if "username" in st.session_state:
             st.session_state[key] = ""
         st.success("You have been logged out.")
         st.stop()
+
+# --- Require login before showing main app ---
 if "username" not in st.session_state:
     st.warning("👤 Please log in to continue.")
     st.stop()
@@ -57,17 +58,13 @@ def ensure_id(todo):
 
 # --- Load todos ---
 raw_todos = functions.get_todos(username)
-
 todos = []
 for t in raw_todos:
     try:
         obj = json.loads(t)
-        if "task" not in obj:
-            obj["task"] = str(t).strip()
-        if "due" not in obj:
-            obj["due"] = ""
-        if "progress" not in obj:
-            obj["progress"] = 0
+        obj.setdefault("task", str(t).strip())
+        obj.setdefault("due", "")
+        obj.setdefault("progress", 0)
         ensure_id(obj)
         todos.append(obj)
     except json.JSONDecodeError:
@@ -82,7 +79,6 @@ def save_todos():
 def add_todo():
     task = st.session_state.get("new_todo", "").strip()
     due = st.session_state.get("new_due_date")
-
     if not task:
         st.warning("⚠️ Please enter a task name.")
         return
@@ -92,7 +88,6 @@ def add_todo():
     if due < date.today():
         st.error("⚠️ The selected due date has already passed. Please choose a future date.")
         return
-
     todos.append({
         "task": task,
         "due": due.strftime("%Y-%m-%d"),
@@ -117,18 +112,14 @@ st.markdown(
     "<h1 style='color: teal; text-align: center; margin-bottom: 0px;'>Todo Planner</h1>",
     unsafe_allow_html=True
 )
-
-username = st.session_state.get("username", "")
 st.markdown(
-    f"<p style='text-align: center; color: gray; margin-top: 0px;' Stay productive and organized.</p>",
+    "<p style='text-align: center; color: gray; margin-top: 0px;'>Stay productive and organized.</p>",
     unsafe_allow_html=True
 )
-
 st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
 
 # --- Display Todos ---
 st.subheader("Your Tasks")
-
 if todos:
     header_cols = st.columns([0.07, 0.43, 0.25, 0.25])
     header_cols[0].markdown("**Done**")
@@ -142,7 +133,6 @@ if todos:
     for todo in todos:
         ensure_id(todo)
         tid = todo["id"]
-
         col1, col2, col3, col4 = st.columns([0.07, 0.43, 0.25, 0.25])
 
         with col1:
@@ -155,12 +145,7 @@ if todos:
                     st.session_state["selected_delete"].remove(tid)
 
         with col2:
-            task_text = st.text_input(
-                "",
-                value=todo.get("task", ""),
-                key=f"task_{tid}",
-                label_visibility="collapsed"
-            )
+            task_text = st.text_input("", value=todo.get("task", ""), key=f"task_{tid}", label_visibility="collapsed")
 
         with col3:
             due_str = ""
@@ -170,13 +155,7 @@ if todos:
                     due_str = due_date.strftime("%d/%m/%Y")
                 except Exception:
                     due_str = ""
-            entered_due = st.text_input(
-                "",
-                value=due_str,
-                key=f"due_{tid}",
-                label_visibility="collapsed",
-                placeholder="DD/MM/YYYY"
-            )
+            entered_due = st.text_input("", value=due_str, key=f"due_{tid}", label_visibility="collapsed", placeholder="DD/MM/YYYY")
             parsed_due = ""
             if entered_due.strip():
                 try:
@@ -186,14 +165,7 @@ if todos:
                     parsed_due = todo.get("due", "")
 
         with col4:
-            progress = st.slider(
-                "",
-                0,
-                100,
-                value=int(todo.get("progress", 0)),
-                key=f"prog_{tid}",
-                label_visibility="collapsed"
-            )
+            progress = st.slider("", 0, 100, value=int(todo.get("progress", 0)), key=f"prog_{tid}", label_visibility="collapsed")
 
         todo["task"] = task_text.strip()
         todo["due"] = parsed_due
@@ -211,21 +183,11 @@ st.subheader("Add a New Task")
 def trigger_date_picker():
     st.session_state["show_date_prompt"] = True
 
-st.text_input(
-    label="Task Name",
-    placeholder="Type your task here...",
-    key="new_todo",
-    on_change=trigger_date_picker
-)
+st.text_input("Task Name", placeholder="Type your task here...", key="new_todo", on_change=trigger_date_picker)
 
 if st.session_state.get("show_date_prompt"):
     st.markdown("🗓️ **Please select a due date below before adding the task.**")
     st.session_state["show_date_prompt"] = False
 
-st.date_input(
-    label="Select Due Date (DD/MM/YYYY)",
-    key="new_due_date",
-    format="DD/MM/YYYY"
-)
-
+st.date_input("Select Due Date (DD/MM/YYYY)", key="new_due_date", format="DD/MM/YYYY")
 st.button("➕ Add Task", on_click=add_todo)
