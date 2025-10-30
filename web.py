@@ -46,13 +46,9 @@ def add_todo():
     if not due:
         st.warning("⚠️ Please select a due date.")
         return
-
-    # Check if due date already passed
     if due < date.today():
-        st.session_state["invalid_due_date"] = True
+        st.error("⚠️ The selected due date has already passed. Please choose a future date.")
         return
-    else:
-        st.session_state["invalid_due_date"] = False
 
     todos.append({
         "task": task,
@@ -63,7 +59,7 @@ def add_todo():
     save_todos()
     st.session_state["new_todo"] = ""
     st.session_state["new_due_date"] = None
-    st.experimental_rerun()  # refresh page after add
+    st.experimental_rerun()  # refresh page after adding
 
 # --- Delete selected todos ---
 def delete_selected(selected_ids):
@@ -71,7 +67,6 @@ def delete_selected(selected_ids):
     if selected_ids:
         todos = [t for t in todos if t["id"] not in set(selected_ids)]
         save_todos()
-        st.session_state["refresh_key"] = str(uuid.uuid4())  # force refresh
         st.experimental_rerun()  # refresh page after deletion
 
 # --- Page Title ---
@@ -89,8 +84,6 @@ st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
 st.subheader("Your Tasks")
 st.markdown("<p style='text-align: center; color: gray;'>Click checkbox to delete</p>", unsafe_allow_html=True)
 
-selected_to_delete = []
-
 if todos:
     header_cols = st.columns([0.07, 0.43, 0.25, 0.25])
     header_cols[0].markdown("**Done**")
@@ -98,7 +91,9 @@ if todos:
     header_cols[2].markdown("**Due Date (DD/MM/YYYY)**")
     header_cols[3].markdown("**Progress (%)**")
 
-    for idx, todo in enumerate(todos):
+    selected_to_delete = []
+
+    for todo in todos:
         ensure_id(todo)
         tid = todo["id"]
 
@@ -138,7 +133,7 @@ if todos:
                     try:
                         parsed_due = datetime.strptime(entered_due.strip(), "%d/%m/%Y").strftime("%Y-%m-%d")
                     except ValueError:
-                        st.warning(f"⚠️ Invalid date format in task {idx + 1}. Use DD/MM/YYYY.")
+                        st.warning(f"⚠️ Invalid date format in task {todo['task']}. Use DD/MM/YYYY.")
                         parsed_due = todo.get("due", "")
 
             with col4:
@@ -151,15 +146,14 @@ if todos:
                     label_visibility="collapsed"
                 )
 
-            # Update todo
             todo["task"] = task_text.strip()
             todo["due"] = parsed_due
             todo["progress"] = progress
 
-    # Delete button
+    # --- Delete Button ---
     st.button("🗑️ Delete Selected", on_click=delete_selected, args=(selected_to_delete,))
-
     save_todos()
+
 else:
     st.info("No tasks yet. Add one below!")
 
@@ -189,10 +183,6 @@ st.date_input(
     key="new_due_date",
     format="DD/MM/YYYY"
 )
-
-# --- Show error if invalid date was chosen ---
-if st.session_state.get("invalid_due_date"):
-    st.error("⚠️ The selected due date has already passed. Please choose a future date.")
 
 # --- Add Task Button ---
 st.button("➕ Add Task", on_click=add_todo)
