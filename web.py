@@ -120,10 +120,16 @@ def delete_selected():
 
 # --- Page Title & Welcome ---
 st.markdown("<h1 style='color: teal; text-align: center;'>Todo Planner</h1>", unsafe_allow_html=True)
-st.markdown(
-    f"<p style='text-align: center; color: gray;'>Welcome, <b>{username}</b>! Stay productive and organized.</p>",
-    unsafe_allow_html=True
-)
+if username:
+    st.markdown(
+        f"<p style='text-align: center; color: gray;'>Welcome, <b>{username}</b>! Stay productive and organized.</p>",
+        unsafe_allow_html=True
+    )
+else:
+    st.markdown(
+        "<p style='text-align: center; color: gray;'>Welcome! Stay productive and organized.</p>",
+        unsafe_allow_html=True
+    )
 st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
 
 # --- Display Todos ---
