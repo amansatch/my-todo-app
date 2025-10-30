@@ -55,6 +55,7 @@ def add_todo():
     save_todos()
     st.session_state["new_todo"] = ""
     st.session_state["new_due_date"] = None
+    st.experimental_rerun()  # safe, only after Add Task button
 
 # --- Page Title ---
 st.markdown("<h1 style='color: teal; text-align: center;'>Todo Planner</h1>", unsafe_allow_html=True)
@@ -78,54 +79,51 @@ if todos:
         ensure_id(todo)
         tid = todo["id"]
 
-        with st.container():
-            col1, col2, col3, col4 = st.columns([0.07, 0.43, 0.25, 0.25])
+        col1, col2, col3, col4 = st.columns([0.07, 0.43, 0.25, 0.25])
 
-            with col1:
-                chk_val = st.checkbox("", key=f"chk_{tid}")
-                if chk_val:
-                    delete_ids.append(tid)
+        with col1:
+            if st.checkbox("", key=f"chk_{tid}"):
+                delete_ids.append(tid)
 
-            with col2:
-                task_text = st.text_input("", value=todo["task"], key=f"task_{tid}", label_visibility="collapsed")
+        with col2:
+            task_text = st.text_input("", value=todo["task"], key=f"task_{tid}", label_visibility="collapsed")
 
-            with col3:
-                due_str = ""
-                if todo.get("due"):
-                    try:
-                        due_date = datetime.strptime(todo["due"], "%Y-%m-%d")
-                        due_str = due_date.strftime("%d/%m/%Y")
-                    except Exception:
-                        due_str = ""
-                entered_due = st.text_input("", value=due_str, key=f"due_{tid}", label_visibility="collapsed", placeholder="DD/MM/YYYY")
-                parsed_due = ""
-                if entered_due.strip():
-                    try:
-                        parsed_due = datetime.strptime(entered_due.strip(), "%d/%m/%Y").strftime("%Y-%m-%d")
-                    except ValueError:
-                        st.warning(f"⚠️ Invalid date format in task '{todo['task']}'. Use DD/MM/YYYY.")
-                        parsed_due = todo.get("due", "")
+        with col3:
+            due_str = ""
+            if todo.get("due"):
+                try:
+                    due_date = datetime.strptime(todo["due"], "%Y-%m-%d")
+                    due_str = due_date.strftime("%d/%m/%Y")
+                except Exception:
+                    due_str = ""
+            entered_due = st.text_input("", value=due_str, key=f"due_{tid}", label_visibility="collapsed", placeholder="DD/MM/YYYY")
+            parsed_due = todo.get("due", "")
+            if entered_due.strip():
+                try:
+                    parsed_due = datetime.strptime(entered_due.strip(), "%d/%m/%Y").strftime("%Y-%m-%d")
+                except ValueError:
+                    st.warning(f"⚠️ Invalid date format in task '{todo['task']}'. Use DD/MM/YYYY.")
 
-            with col4:
-                progress = st.slider("", 0, 100, value=int(todo.get("progress", 0)), key=f"prog_{tid}", label_visibility="collapsed")
+        with col4:
+            progress = st.slider("", 0, 100, value=int(todo.get("progress", 0)), key=f"prog_{tid}", label_visibility="collapsed")
 
-            # Update task fields
-            todo["task"] = task_text.strip()
-            todo["due"] = parsed_due
-            todo["progress"] = progress
+        # Update task fields
+        todo["task"] = task_text.strip()
+        todo["due"] = parsed_due
+        todo["progress"] = progress
 
     save_todos()
 
 else:
     st.info("No tasks yet. Add one below!")
 
-# --- Delete Selected Button ---
-if delete_ids:
-    if st.button("🗑️ Delete Selected Tasks"):
+# --- Delete Selected Tasks Button ---
+if st.button("🗑️ Delete Selected Tasks"):
+    if delete_ids:
         todos[:] = [t for t in todos if t["id"] not in set(delete_ids)]
         save_todos()
         st.success(f"Deleted {len(delete_ids)} task(s).")
-        st.experimental_rerun()
+        st.experimental_rerun()  # safe here, after button click
 
 # --- Add New Task Section ---
 st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
