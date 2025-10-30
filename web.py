@@ -28,6 +28,12 @@ with register_tab:
         else:
             st.warning("Username already exists.")
 
+# --- Logout ---
+if "username" in st.session_state:
+    if st.sidebar.button("🚪 Logout"):
+        st.session_state.clear()
+        st.experimental_rerun()
+
 if "username" not in st.session_state:
     st.warning("👤 Please log in to continue.")
     st.stop()
