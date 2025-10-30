@@ -3,6 +3,7 @@ import functions
 import json
 import uuid
 from datetime import date, datetime
+import io
 
 # --- Helpers ---
 def make_id():
@@ -12,28 +13,23 @@ def ensure_id(todo):
     if "id" not in todo or not todo["id"]:
         todo["id"] = make_id()
 
-# --- Page Title ---
-st.markdown(
-    "<h1 style='color: teal; text-align: center; margin-bottom: 0px;'>Team Todo Planner</h1>",
-    unsafe_allow_html=True
-)
-st.markdown(
-    "<p style='text-align: center; color: gray; margin-top: 0px;'>Stay productive and organized!</p>",
-    unsafe_allow_html=True
-)
-st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
+# --- User identification ---
+# We'll ask each user to enter a username
+if "username" not in st.session_state:
+    st.session_state["username"] = ""
 
-# --- Login Section ---
-username = st.text_input("👤 Enter your name or ID:", key="user_name")
+st.sidebar.header("👤 Your Name")
+username = st.sidebar.text_input("Enter your name:", st.session_state["username"])
+st.session_state["username"] = username
 
-if not username:
-    st.warning("Please enter your name to access your personal planner.")
-    st.stop()
+# File path per user
+def get_user_file():
+    return f"{username}_todos.txt" if username else "todos.txt"
 
-# --- Load Todos ---
-raw_todos = functions.get_todos(username)
+# --- Load todos ---
+raw_todos = functions.get_todos(get_user_file()) if username else []
+
 todos = []
-
 for t in raw_todos:
     try:
         obj = json.loads(t)
@@ -48,12 +44,13 @@ for t in raw_todos:
     except json.JSONDecodeError:
         todos.append({"task": t.strip(), "due": "", "progress": 0, "id": make_id()})
 
-# --- Save Todos ---
+# --- Save todos ---
 def save_todos():
     data = [json.dumps(t) + "\n" for t in todos]
-    functions.write_todos(data, username)
+    if username:
+        functions.write_todos(data, get_user_file())
 
-# --- Add Todo ---
+# --- Add todo ---
 def add_todo():
     task = st.session_state.get("new_todo", "").strip()
     due = st.session_state.get("new_due_date")
@@ -65,6 +62,7 @@ def add_todo():
         st.warning("⚠️ Please select a due date.")
         return
 
+    # Check if due date already passed
     if due < date.today():
         st.session_state["invalid_due_date"] = True
         return
@@ -82,8 +80,19 @@ def add_todo():
     st.session_state["new_due_date"] = None
     st.rerun()
 
+# --- Page Title ---
+st.markdown(
+    "<h1 style='color: teal; text-align: center; margin-bottom: 0px;'>Todo Planner</h1>",
+    unsafe_allow_html=True
+)
+st.markdown(
+    "<p style='text-align: center; color: gray; margin-top: 0px;'>Stay productive and organized!</p>",
+    unsafe_allow_html=True
+)
+st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
+
 # --- Display Todos ---
-st.subheader(f"Your Tasks, {username}")
+st.subheader("Your Tasks")
 st.markdown("<p style='text-align: center; color: gray;'>Click checkbox to delete</p>", unsafe_allow_html=True)
 
 if todos:
@@ -164,7 +173,6 @@ if todos:
         st.rerun()
 
     save_todos()
-
 else:
     st.info("No tasks yet. Add one below!")
 
@@ -172,6 +180,7 @@ else:
 st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
 st.subheader("Add a New Task")
 
+# --- Text Input for Task Name ---
 def trigger_date_picker():
     st.session_state["show_date_prompt"] = True
 
@@ -182,17 +191,40 @@ st.text_input(
     on_change=trigger_date_picker
 )
 
+# --- Show Prompt if user pressed Enter ---
 if st.session_state.get("show_date_prompt"):
     st.markdown("🗓️ **Please select a due date below before adding the task.**")
     st.session_state["show_date_prompt"] = False
 
+# --- Date input ---
 st.date_input(
     label="Select Due Date (DD/MM/YYYY)",
     key="new_due_date",
     format="DD/MM/YYYY"
 )
 
+# --- Show error if invalid date was chosen ---
 if st.session_state.get("invalid_due_date"):
     st.error("⚠️ The selected due date has already passed. Please choose a future date.")
 
+# --- Add Task Button ---
 st.button("➕ Add Task", on_click=add_todo)
+
+# --- Download current tasks ---
+if username and todos:
+    todos_json = "\n".join([json.dumps(t) for t in todos])
+    st.download_button(
+        label="💾 Download My Tasks",
+        data=todos_json.encode('utf-8'),
+        file_name=f"{username}_todos.txt",
+        mime="text/plain"
+    )
+
+# --- Upload saved tasks ---
+uploaded_file = st.file_uploader("📤 Upload your saved todo file", type=["txt"])
+if uploaded_file:
+    uploaded_data = uploaded_file.read().decode('utf-8').splitlines()
+    todos = [json.loads(line) for line in uploaded_data if line.strip()]
+    functions.write_todos(uploaded_data, get_user_file())
+    st.success("✅ Your tasks have been loaded!")
+    st.rerun()
