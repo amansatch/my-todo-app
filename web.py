@@ -126,7 +126,11 @@ st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
 
 # --- Display Todos ---
 st.subheader("Your Tasks")
-st.markdown("<p style='text-align: center; color: gray;'>Click checkbox to delete</p>", unsafe_allow_html=True)
+username = st.session_state.get("username", "")
+st.markdown(
+    f"<p style='text-align: center; color: gray; margin-top: 0px;'>Welcome, <b>{username if username else 'Guest'}</b>! Stay productive and organized.</p>",
+    unsafe_allow_html=True
+)
 
 if todos:
     header_cols = st.columns([0.07, 0.43, 0.25, 0.25])
