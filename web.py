@@ -1,4 +1,5 @@
 import streamlit as st
+import functions
 import json
 import uuid
 from datetime import date, datetime
@@ -12,21 +13,26 @@ def ensure_id(todo):
         todo["id"] = make_id()
 
 # --- Load todos ---
-if "todos" not in st.session_state:
-    st.session_state["todos"] = []
+raw_todos = functions.get_todos()
+todos = []
+for t in raw_todos:
+    try:
+        obj = json.loads(t)
+        if "task" not in obj:
+            obj["task"] = str(t).strip()
+        if "due" not in obj:
+            obj["due"] = ""
+        if "progress" not in obj:
+            obj["progress"] = 0
+        ensure_id(obj)
+        todos.append(obj)
+    except json.JSONDecodeError:
+        todos.append({"task": t.strip(), "due": "", "progress": 0, "id": make_id()})
 
-# Upload existing todos
-uploaded_file = st.file_uploader("📤 Upload your saved todo file", type=["txt"])
-if uploaded_file:
-    uploaded_data = uploaded_file.read().decode("utf-8").splitlines()
-    st.session_state["todos"] = [
-        json.loads(line) for line in uploaded_data if line.strip()
-    ]
-    st.success("✅ Todos loaded!")
-
-# --- Save todos (to allow download) ---
-def get_download_data():
-    return "\n".join([json.dumps(t) for t in st.session_state["todos"]])
+# --- Save todos ---
+def save_todos():
+    data = [json.dumps(t) + "\n" for t in todos]
+    functions.write_todos(data)
 
 # --- Add todo ---
 def add_todo():
@@ -40,15 +46,18 @@ def add_todo():
         st.warning("⚠️ Please select a due date.")
         return
     if due < date.today():
-        st.error("⚠️ The selected due date has already passed. Please choose a future date.")
+        st.session_state["invalid_due_date"] = True
         return
+    else:
+        st.session_state["invalid_due_date"] = False
 
-    st.session_state["todos"].append({
+    todos.append({
         "task": task,
         "due": due.strftime("%Y-%m-%d"),
         "progress": 0,
         "id": make_id()
     })
+    save_todos()
     st.session_state["new_todo"] = ""
     st.session_state["new_due_date"] = None
 
@@ -67,9 +76,6 @@ st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
 st.subheader("Your Tasks")
 st.markdown("<p style='text-align: center; color: gray;'>Click checkbox to delete</p>", unsafe_allow_html=True)
 
-todos = st.session_state["todos"]
-delete_ids = []
-
 if todos:
     header_cols = st.columns([0.07, 0.43, 0.25, 0.25])
     header_cols[0].markdown("**Done**")
@@ -77,9 +83,11 @@ if todos:
     header_cols[2].markdown("**Due Date (DD/MM/YYYY)**")
     header_cols[3].markdown("**Progress (%)**")
 
-    for todo in todos:
+    delete_ids = []
+    for idx, todo in enumerate(todos):
         ensure_id(todo)
         tid = todo["id"]
+
         with st.container():
             col1, col2, col3, col4 = st.columns([0.07, 0.43, 0.25, 0.25])
 
@@ -114,7 +122,7 @@ if todos:
                     try:
                         parsed_due = datetime.strptime(entered_due.strip(), "%d/%m/%Y").strftime("%Y-%m-%d")
                     except ValueError:
-                        st.warning(f"⚠️ Invalid date format for task '{task_text}'. Use DD/MM/YYYY.")
+                        st.warning(f"⚠️ Invalid date format in task {idx + 1}. Use DD/MM/YYYY.")
                         parsed_due = todo.get("due", "")
 
             with col4:
@@ -135,9 +143,15 @@ if todos:
                 delete_ids.append(tid)
 
     if delete_ids:
-        st.session_state["todos"] = [t for t in todos if t["id"] not in set(delete_ids)]
+        todos = [t for t in todos if t["id"] not in set(delete_ids)]
+        for tid in delete_ids:
+            for k in (f"chk_{tid}", f"task_{tid}", f"due_{tid}", f"prog_{tid}"):
+                if k in st.session_state:
+                    del st.session_state[k]
+        save_todos()
         st.experimental_rerun()
 
+    save_todos()
 else:
     st.info("No tasks yet. Add one below!")
 
@@ -145,11 +159,19 @@ else:
 st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
 st.subheader("Add a New Task")
 
+def trigger_date_picker():
+    st.session_state["show_date_prompt"] = True
+
 st.text_input(
     label="Task Name",
     placeholder="Type your task here...",
-    key="new_todo"
+    key="new_todo",
+    on_change=trigger_date_picker
 )
+
+if st.session_state.get("show_date_prompt"):
+    st.markdown("🗓️ **Please select a due date below before adding the task.**")
+    st.session_state["show_date_prompt"] = False
 
 st.date_input(
     label="Select Due Date (DD/MM/YYYY)",
@@ -157,13 +179,38 @@ st.date_input(
     format="DD/MM/YYYY"
 )
 
+if st.session_state.get("invalid_due_date"):
+    st.error("⚠️ The selected due date has already passed. Please choose a future date.")
+
 st.button("➕ Add Task", on_click=add_todo)
 
-# --- Download todos.txt ---
-if st.session_state.get("todos"):
-    st.download_button(
-        label="💾 Download My Todos",
-        data=get_download_data().encode("utf-8"),
-        file_name="todos.txt",
-        mime="text/plain"
-    )
+# --- Download & Upload Buttons ---
+st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
+st.subheader("Save or Load Your Tasks")
+
+# Download
+def download_todos():
+    data = "".join([json.dumps(t) + "\n" for t in todos])
+    st.download_button("💾 Download My Todos", data=data, file_name="todos.txt", mime="text/plain")
+
+download_todos()
+
+# Upload
+uploaded_file = st.file_uploader("📂 Upload Your Todos File", type="txt")
+if uploaded_file:
+    try:
+        content = uploaded_file.read().decode("utf-8").splitlines()
+        new_todos = []
+        for t in content:
+            try:
+                obj = json.loads(t)
+                ensure_id(obj)
+                new_todos.append(obj)
+            except json.JSONDecodeError:
+                new_todos.append({"task": t.strip(), "due": "", "progress": 0, "id": make_id()})
+        todos = new_todos
+        save_todos()
+        st.success("✅ Todos loaded successfully!")
+        st.experimental_rerun()
+    except Exception as e:
+        st.error(f"⚠️ Error loading file: {e}")
