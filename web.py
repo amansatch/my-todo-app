@@ -63,6 +63,16 @@ def add_todo():
     save_todos()
     st.session_state["new_todo"] = ""
     st.session_state["new_due_date"] = None
+    st.experimental_rerun()  # refresh page after add
+
+# --- Delete selected todos ---
+def delete_selected(selected_ids):
+    global todos
+    if selected_ids:
+        todos = [t for t in todos if t["id"] not in set(selected_ids)]
+        save_todos()
+        st.session_state["refresh_key"] = str(uuid.uuid4())  # force refresh
+        st.experimental_rerun()  # refresh page after deletion
 
 # --- Page Title ---
 st.markdown(
@@ -79,6 +89,8 @@ st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
 st.subheader("Your Tasks")
 st.markdown("<p style='text-align: center; color: gray;'>Click checkbox to delete</p>", unsafe_allow_html=True)
 
+selected_to_delete = []
+
 if todos:
     header_cols = st.columns([0.07, 0.43, 0.25, 0.25])
     header_cols[0].markdown("**Done**")
@@ -94,7 +106,9 @@ if todos:
             col1, col2, col3, col4 = st.columns([0.07, 0.43, 0.25, 0.25])
 
             with col1:
-                st.checkbox("", key=f"chk_{tid}")
+                chk_val = st.checkbox("", key=f"chk_{tid}")
+                if chk_val:
+                    selected_to_delete.append(tid)
 
             with col2:
                 task_text = st.text_input(
@@ -110,7 +124,7 @@ if todos:
                     try:
                         due_date = datetime.strptime(todo["due"], "%Y-%m-%d")
                         due_str = due_date.strftime("%d/%m/%Y")
-                    except:
+                    except Exception:
                         due_str = ""
                 entered_due = st.text_input(
                     "",
@@ -137,22 +151,17 @@ if todos:
                     label_visibility="collapsed"
                 )
 
+            # Update todo
             todo["task"] = task_text.strip()
             todo["due"] = parsed_due
             todo["progress"] = progress
 
-# --- Delete Selected Tasks Button ---
-if st.button("🗑️ Delete Selected Tasks"):
-    todos_to_keep = [t for t in todos if not st.session_state.get(f"chk_{t['id']}", False)]
-    # Clear deleted tasks from session_state
-    for t in todos:
-        if st.session_state.get(f"chk_{t['id']}", False):
-            for k in (f"chk_{t['id']}", f"task_{t['id']}", f"due_{t['id']}", f"prog_{t['id']}"):
-                if k in st.session_state:
-                    del st.session_state[k]
-    todos = todos_to_keep
+    # Delete button
+    st.button("🗑️ Delete Selected", on_click=delete_selected, args=(selected_to_delete,))
+
     save_todos()
-    st.experimental_set_query_params(refresh=str(uuid.uuid4()))  # force rerender
+else:
+    st.info("No tasks yet. Add one below!")
 
 # --- Add New Task Section ---
 st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
