@@ -43,7 +43,7 @@ with register_tab:
             st.warning("Username already exists.")
 
 # --- Logout ---
-if "username" in st.session_state:
+if "username" in st.session_state and st.session_state["username"]:
     if st.sidebar.button("🚪 Logout"):
         st.session_state.clear()
         for key in ["login_user", "login_pass", "reg_user", "reg_pass"]:
@@ -53,18 +53,10 @@ if "username" in st.session_state:
         st.success("You have been logged out.")
         st.stop()
 
-with login_tab:
-    st.text_input("Username", key="login_user")
-    st.text_input("Password", type="password", key="login_pass")
-
-    if st.button("🔓 Login"):
-        if functions.authenticate(st.session_state["login_user"], st.session_state["login_pass"]):
-            st.session_state["username"] = st.session_state["login_user"]
-            with open("active_user.txt", "w") as f:
-                f.write(st.session_state["username"])
-            st.rerun()
-        else:
-            st.error("Invalid username or password.")
+# --- Require login before showing main app ---
+if "username" not in st.session_state or not st.session_state["username"]:
+    st.warning("👤 Please log in to continue.")
+    st.stop()
 
 # --- Load username ---
 username = st.session_state["username"]
