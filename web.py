@@ -4,15 +4,35 @@ import json
 import uuid
 from datetime import date, datetime
 
-# --- User Login ---
-st.sidebar.title("Login")
-username = st.sidebar.text_input("Enter your username")
+# --- Login & Registration ---
+st.sidebar.title("🔐 Account Access")
 
-if not username:
-    st.warning("👤 Please enter your username in the sidebar to continue.")
+login_tab, register_tab = st.sidebar.tabs(["Login", "Register"])
+
+with login_tab:
+    username = st.text_input("Username", key="login_user")
+    password = st.text_input("Password", type="password", key="login_pass")
+    if st.button("🔓 Login"):
+        if functions.authenticate(username, password):
+            st.session_state["username"] = username
+            st.success(f"Welcome back, {username}!")
+        else:
+            st.error("Invalid username or password.")
+
+with register_tab:
+    new_user = st.text_input("New Username", key="reg_user")
+    new_pass = st.text_input("New Password", type="password", key="reg_pass")
+    if st.button("📝 Register"):
+        if functions.register_user(new_user, new_pass):
+            st.success("User registered! You can now log in.")
+        else:
+            st.warning("Username already exists.")
+
+if "username" not in st.session_state:
+    st.warning("👤 Please log in to continue.")
     st.stop()
 
-st.session_state["username"] = username
+username = st.session_state["username"]
 
 # --- Helpers ---
 def make_id():
@@ -85,7 +105,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 st.markdown(
-    "<p style='text-align: center; color: gray; margin-top: 0px;'>Stay productive and organized!</p>",
+    f"<p style='text-align: center; color: gray; margin-top: 0px;'>Welcome, <b>{username}</b>! Stay productive and organized.</p>",
     unsafe_allow_html=True
 )
 st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
