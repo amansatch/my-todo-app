@@ -2,7 +2,14 @@ import streamlit as st
 import functions
 import json
 import uuid
+import os
 from datetime import date, datetime
+
+# --- Restore username from file if available ---
+if "username" not in st.session_state:
+    if os.path.exists("active_user.txt"):
+        with open("active_user.txt", "r") as f:
+            st.session_state["username"] = f.read().strip()
 
 # --- Clean session flags ---
 for key in ["logged_out", "login_user", "login_pass", "reg_user", "reg_pass"]:
@@ -19,6 +26,8 @@ with login_tab:
     if st.button("🔓 Login"):
         if functions.authenticate(st.session_state["login_user"], st.session_state["login_pass"]):
             st.session_state["username"] = st.session_state["login_user"]
+            with open("active_user.txt", "w") as f:
+                f.write(st.session_state["username"])
             st.success(f"Welcome back, {st.session_state['username']}!")
         else:
             st.error("Invalid username or password.")
@@ -38,6 +47,8 @@ if "username" in st.session_state:
         st.session_state.clear()
         for key in ["login_user", "login_pass", "reg_user", "reg_pass"]:
             st.session_state[key] = ""
+        if os.path.exists("active_user.txt"):
+            os.remove("active_user.txt")
         st.success("You have been logged out.")
         st.stop()
 else:
