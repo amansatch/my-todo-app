@@ -14,6 +14,7 @@ def ensure_id(todo):
 
 # --- Load todos ---
 raw_todos = functions.get_todos()
+
 todos = []
 for t in raw_todos:
     try:
@@ -38,6 +39,7 @@ def save_todos():
 def add_todo():
     task = st.session_state.get("new_todo", "").strip()
     due = st.session_state.get("new_due_date")
+
     if not task:
         st.warning("⚠️ Please enter a task name.")
         return
@@ -45,8 +47,9 @@ def add_todo():
         st.warning("⚠️ Please select a due date.")
         return
     if due < date.today():
-        st.warning("⚠️ The selected due date has already passed.")
+        st.error("⚠️ The selected due date has already passed.")
         return
+
     todos.append({
         "task": task,
         "due": due.strftime("%Y-%m-%d"),
@@ -56,23 +59,24 @@ def add_todo():
     save_todos()
     st.session_state["new_todo"] = ""
     st.session_state["new_due_date"] = None
-    st.experimental_rerun()  # Refresh page after adding
-
-# --- Delete selected todos ---
-def delete_selected(selected_ids):
-    global todos
-    todos = [t for t in todos if t["id"] not in set(selected_ids)]
-    save_todos()
-    st.experimental_rerun()  # Refresh page after deletion
+    st.experimental_rerun()
 
 # --- Page Title ---
-st.markdown("<h1 style='color: teal; text-align: center;'>Todo Planner</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: gray;'>Stay productive and organized!</p>", unsafe_allow_html=True)
-st.markdown("<hr>", unsafe_allow_html=True)
+st.markdown(
+    "<h1 style='color: teal; text-align: center; margin-bottom: 0px;'>Todo Planner</h1>",
+    unsafe_allow_html=True
+)
+st.markdown(
+    "<p style='text-align: center; color: gray; margin-top: 0px;'>Stay productive and organized!</p>",
+    unsafe_allow_html=True
+)
+st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
 
 # --- Display Todos ---
 st.subheader("Your Tasks")
-st.markdown("<p style='color: gray;'>Click checkbox to delete</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: gray;'>Click checkbox to delete</p>", unsafe_allow_html=True)
+
+delete_ids = []
 
 if todos:
     header_cols = st.columns([0.07, 0.43, 0.25, 0.25])
@@ -81,44 +85,28 @@ if todos:
     header_cols[2].markdown("**Due Date (DD/MM/YYYY)**")
     header_cols[3].markdown("**Progress (%)**")
 
-    selected_to_delete = []
     for todo in todos:
         ensure_id(todo)
         tid = todo["id"]
-        col1, col2, col3, col4 = st.columns([0.07, 0.43, 0.25, 0.25])
-        with col1:
-            if st.checkbox("", key=f"chk_{tid}"):
-                selected_to_delete.append(tid)
-        with col2:
-            task_text = st.text_input("", value=todo.get("task",""), key=f"task_{tid}", label_visibility="collapsed")
-        with col3:
-            due_str = ""
-            if todo.get("due"):
-                try:
-                    due_date = datetime.strptime(todo["due"], "%Y-%m-%d")
-                    due_str = due_date.strftime("%d/%m/%Y")
-                except:
-                    due_str = ""
-            entered_due = st.text_input("", value=due_str, key=f"due_{tid}", placeholder="DD/MM/YYYY", label_visibility="collapsed")
-            if entered_due.strip():
-                try:
-                    todo["due"] = datetime.strptime(entered_due.strip(), "%d/%m/%Y").strftime("%Y-%m-%d")
-                except:
-                    st.warning(f"⚠️ Invalid date format for task {task_text}")
-        with col4:
-            todo["progress"] = st.slider("", 0, 100, value=int(todo.get("progress",0)), key=f"prog_{tid}", label_visibility="collapsed")
-        todo["task"] = task_text.strip()
 
-    if selected_to_delete:
-        if st.button("🗑️ Delete Selected Tasks"):
-            delete_selected(selected_to_delete)
-    save_todos()
-else:
-    st.info("No tasks yet. Add one below!")
+        with st.container():
+            col1, col2, col3, col4 = st.columns([0.07, 0.43, 0.25, 0.25])
 
-# --- Add New Task Section ---
-st.markdown("<hr>", unsafe_allow_html=True)
-st.subheader("Add a New Task")
-st.text_input("Task Name", key="new_todo")
-st.date_input("Select Due Date (DD/MM/YYYY)", key="new_due_date", format="DD/MM/YYYY")
-st.button("➕ Add Task", on_click=add_todo)
+            with col1:
+                chk_val = st.checkbox("", key=f"chk_{tid}")
+                if chk_val:
+                    delete_ids.append(tid)
+
+            with col2:
+                task_text = st.text_input(
+                    "",
+                    value=todo.get("task", ""),
+                    key=f"task_{tid}",
+                    label_visibility="collapsed"
+                )
+
+            with col3:
+                due_str = ""
+                if todo.get("due"):
+                    try:
+                        due_date = datetime_
