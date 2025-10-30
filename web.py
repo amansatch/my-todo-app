@@ -32,7 +32,14 @@ def save_todos():
 def add_todo():
     task = st.session_state.get("new_todo", "").strip()
     due = st.session_state.get("new_due_date")
-    if not task or not due or due < date.today():
+    if not task:
+        st.warning("⚠️ Please enter a task name.")
+        return
+    if not due:
+        st.warning("⚠️ Please select a due date.")
+        return
+    if due < date.today():
+        st.warning("⚠️ The selected due date has already passed.")
         return
     todos.append({
         "task": task,
@@ -44,11 +51,11 @@ def add_todo():
     st.session_state["new_todo"] = ""
     st.session_state["new_due_date"] = None
 
-# --- UI ---
 st.markdown("<h1 style='color: teal; text-align:center;'>Todo Planner</h1>", unsafe_allow_html=True)
 st.subheader("Your Tasks")
-st.markdown("<p style='text-align:center; color:gray;'>Click checkbox to delete</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align:center; color:gray;'>Click checkbox for tasks to delete, then press Delete Selected</p>", unsafe_allow_html=True)
 
+# --- Display todos ---
 delete_ids = []
 for todo in todos:
     ensure_id(todo)
@@ -73,10 +80,14 @@ for todo in todos:
     with col4:
         todo["progress"] = st.slider("", 0, 100, value=int(todo.get("progress",0)), key=f"prog_{tid}", label_visibility="collapsed")
 
-if delete_ids:
-    todos = [t for t in todos if t["id"] not in set(delete_ids)]
-    save_todos()
+# --- Delete Selected Button ---
+if st.button("🗑️ Delete Selected Tasks"):
+    if delete_ids:
+        todos = [t for t in todos if t["id"] not in set(delete_ids)]
+        save_todos()
+        st.experimental_rerun()  # safe here, only called after button click
 
+# --- Add New Task Section ---
 st.markdown("<hr>", unsafe_allow_html=True)
 st.subheader("Add a New Task")
 st.text_input("Task Name", placeholder="Type your task here...", key="new_todo")
