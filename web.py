@@ -109,4 +109,64 @@ if todos:
                 due_str = ""
                 if todo.get("due"):
                     try:
-                        due_date = datetime_
+                        due_date = datetime.strptime(todo["due"], "%Y-%m-%d")
+                        due_str = due_date.strftime("%d/%m/%Y")
+                    except Exception:
+                        due_str = ""
+                entered_due = st.text_input(
+                    "",
+                    value=due_str,
+                    key=f"due_{tid}",
+                    label_visibility="collapsed",
+                    placeholder="DD/MM/YYYY"
+                )
+                parsed_due = todo.get("due", "")
+                if entered_due.strip():
+                    try:
+                        parsed_due = datetime.strptime(entered_due.strip(), "%d/%m/%Y").strftime("%Y-%m-%d")
+                    except ValueError:
+                        st.warning(f"⚠️ Invalid date format in task '{task_text}'. Use DD/MM/YYYY.")
+
+            with col4:
+                progress = st.slider(
+                    "",
+                    0,
+                    100,
+                    value=int(todo.get("progress", 0)),
+                    key=f"prog_{tid}",
+                    label_visibility="collapsed"
+                )
+
+            todo["task"] = task_text.strip()
+            todo["due"] = parsed_due
+            todo["progress"] = progress
+
+# --- Delete Button ---
+if delete_ids:
+    if st.button("🗑️ Delete Selected Tasks"):
+        todos = [t for t in todos if t["id"] not in set(delete_ids)]
+        # Clear session_state keys for deleted todos
+        for tid in delete_ids:
+            for k in (f"chk_{tid}", f"task_{tid}", f"due_{tid}", f"prog_{tid}"):
+                if k in st.session_state:
+                    del st.session_state[k]
+        save_todos()
+        st.experimental_rerun()  # Refresh page automatically after deletion
+
+# --- Add New Task Section ---
+st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
+st.subheader("Add a New Task")
+
+st.text_input(
+    label="Task Name",
+    placeholder="Type your task here...",
+    key="new_todo"
+)
+
+st.date_input(
+    label="Select Due Date (DD/MM/YYYY)",
+    key="new_due_date",
+    format="DD/MM/YYYY"
+)
+
+st.button("➕ Add Task", on_click=add_todo)
