@@ -46,9 +46,12 @@ def add_todo():
     if not due:
         st.warning("⚠️ Please select a due date.")
         return
+
     if due < date.today():
-        st.error("⚠️ The selected due date has already passed.")
+        st.session_state["invalid_due_date"] = True
         return
+    else:
+        st.session_state["invalid_due_date"] = False
 
     todos.append({
         "task": task,
@@ -59,7 +62,21 @@ def add_todo():
     save_todos()
     st.session_state["new_todo"] = ""
     st.session_state["new_due_date"] = None
-    st.experimental_rerun()  # safe here after adding
+    st.experimental_rerun()  # safe after button click
+
+# --- Delete function ---
+def delete_selected():
+    global todos
+    todos_to_keep = [t for t in todos if not st.session_state.get(f"chk_{t['id']}", False)]
+    # Clear deleted tasks from session_state
+    for t in todos:
+        if st.session_state.get(f"chk_{t['id']}", False):
+            for k in (f"chk_{t['id']}", f"task_{t['id']}", f"due_{t['id']}", f"prog_{t['id']}"):
+                if k in st.session_state:
+                    del st.session_state[k]
+    todos = todos_to_keep
+    save_todos()
+    st.experimental_rerun()  # refresh page after deletion
 
 # --- Page Title ---
 st.markdown(
@@ -76,8 +93,6 @@ st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
 st.subheader("Your Tasks")
 st.markdown("<p style='text-align: center; color: gray;'>Click checkbox to delete</p>", unsafe_allow_html=True)
 
-delete_ids = []
-
 if todos:
     header_cols = st.columns([0.07, 0.43, 0.25, 0.25])
     header_cols[0].markdown("**Done**")
@@ -85,7 +100,7 @@ if todos:
     header_cols[2].markdown("**Due Date (DD/MM/YYYY)**")
     header_cols[3].markdown("**Progress (%)**")
 
-    for todo in todos:
+    for idx, todo in enumerate(todos):
         ensure_id(todo)
         tid = todo["id"]
 
@@ -93,9 +108,7 @@ if todos:
             col1, col2, col3, col4 = st.columns([0.07, 0.43, 0.25, 0.25])
 
             with col1:
-                chk_val = st.checkbox("", key=f"chk_{tid}")
-                if chk_val:
-                    delete_ids.append(tid)
+                st.checkbox("", key=f"chk_{tid}")
 
             with col2:
                 task_text = st.text_input(
@@ -120,12 +133,13 @@ if todos:
                     label_visibility="collapsed",
                     placeholder="DD/MM/YYYY"
                 )
-                parsed_due = todo.get("due", "")
+                parsed_due = ""
                 if entered_due.strip():
                     try:
                         parsed_due = datetime.strptime(entered_due.strip(), "%d/%m/%Y").strftime("%Y-%m-%d")
                     except ValueError:
-                        st.warning(f"⚠️ Invalid date format in task '{task_text}'. Use DD/MM/YYYY.")
+                        st.warning(f"⚠️ Invalid date format in task {idx + 1}. Use DD/MM/YYYY.")
+                        parsed_due = todo.get("due", "")
 
             with col4:
                 progress = st.slider(
@@ -137,37 +151,48 @@ if todos:
                     label_visibility="collapsed"
                 )
 
-            # Save updated values
             todo["task"] = task_text.strip()
             todo["due"] = parsed_due
             todo["progress"] = progress
 
-# --- Delete Button ---
-if delete_ids:
-    if st.button("🗑️ Delete Selected Tasks"):
-        todos = [t for t in todos if t["id"] not in set(delete_ids)]
-        # Clear session_state keys for deleted todos
-        for tid in delete_ids:
-            for k in (f"chk_{tid}", f"task_{tid}", f"due_{tid}", f"prog_{tid}"):
-                if k in st.session_state:
-                    del st.session_state[k]
-        save_todos()
-        st.experimental_rerun()  # Refresh page automatically after deletion
+    save_todos()
+
+else:
+    st.info("No tasks yet. Add one below!")
+
+# --- Delete Selected Tasks Button ---
+st.button("🗑️ Delete Selected Tasks", on_click=delete_selected)
 
 # --- Add New Task Section ---
 st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
 st.subheader("Add a New Task")
 
+# --- Text Input for Task Name ---
+def trigger_date_prompt():
+    st.session_state["show_date_prompt"] = True
+
 st.text_input(
     label="Task Name",
     placeholder="Type your task here...",
-    key="new_todo"
+    key="new_todo",
+    on_change=trigger_date_prompt
 )
 
+# --- Show Prompt if user pressed Enter ---
+if st.session_state.get("show_date_prompt"):
+    st.markdown("🗓️ **Please select a due date below before adding the task.**")
+    st.session_state["show_date_prompt"] = False
+
+# --- Date input ---
 st.date_input(
     label="Select Due Date (DD/MM/YYYY)",
     key="new_due_date",
     format="DD/MM/YYYY"
 )
 
+# --- Show error if invalid date ---
+if st.session_state.get("invalid_due_date"):
+    st.error("⚠️ The selected due date has already passed. Please choose a future date.")
+
+# --- Add Task Button ---
 st.button("➕ Add Task", on_click=add_todo)
