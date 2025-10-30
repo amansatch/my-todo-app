@@ -5,6 +5,11 @@ import uuid
 import os
 from datetime import date, datetime
 
+# --- Require login before showing main app ---
+if "username" not in st.session_state or not st.session_state["username"]:
+    st.warning("👤 Please log in to continue.")
+    st.stop()
+    
 # --- Restore username from file if available ---
 if "username" not in st.session_state:
     if os.path.exists("active_user.txt"):
