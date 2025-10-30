@@ -59,7 +59,7 @@ def add_todo():
     save_todos()
     st.session_state["new_todo"] = ""
     st.session_state["new_due_date"] = None
-    st.experimental_rerun()
+    st.experimental_rerun()  # safe here after adding
 
 # --- Page Title ---
 st.markdown(
@@ -137,6 +137,7 @@ if todos:
                     label_visibility="collapsed"
                 )
 
+            # Save updated values
             todo["task"] = task_text.strip()
             todo["due"] = parsed_due
             todo["progress"] = progress
