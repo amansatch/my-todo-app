@@ -55,7 +55,6 @@ if "username" in st.session_state:
 
 # --- Require login before showing main app ---
 if "username" not in st.session_state or not st.session_state["username"]:
-    st.warning("👤 Please log in to continue.")
     st.stop()
 
 # --- Load username ---
