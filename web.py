@@ -108,8 +108,9 @@ def delete_selected():
 
 # --- Page Title & Welcome ---
 st.markdown("<h1 style='color: teal; text-align: center;'>Todo Planner</h1>", unsafe_allow_html=True)
+username = st.session_state.get("username", "")
 st.markdown(
-    f"<p style='text-align: center; color: gray;'>Welcome, <b>{username}</b>! Stay productive and organized.</p>",
+    f"<p style='text-align: center; color: gray; margin-top: 0px;'>Welcome, <b>{username if username else 'Guest'}</b>! Stay productive and organized.</p>",
     unsafe_allow_html=True
 )
 st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
