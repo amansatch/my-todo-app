@@ -37,7 +37,6 @@ with register_tab:
 if "username" in st.session_state:
     if st.sidebar.button("🚪 Logout"):
         st.session_state.clear()
-        # Clear login and registration fields
         for key in ["login_user", "login_pass", "reg_user", "reg_pass"]:
             st.session_state[key] = ""
         st.success("You have been logged out.")
@@ -118,19 +117,17 @@ st.markdown(
     "<h1 style='color: teal; text-align: center; margin-bottom: 0px;'>Todo Planner</h1>",
     unsafe_allow_html=True
 )
-st.markdown(
-    f"<p style='text-align: center; color: gray; margin-top: 0px;'>Welcome, <b>{username}</b>! Stay productive and organized.</p>",
-    unsafe_allow_html=True
-)
-st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
 
-# --- Display Todos ---
-st.subheader("Your Tasks")
 username = st.session_state.get("username", "")
 st.markdown(
     f"<p style='text-align: center; color: gray; margin-top: 0px;'>Welcome, <b>{username if username else 'Guest'}</b>! Stay productive and organized.</p>",
     unsafe_allow_html=True
 )
+
+st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
+
+# --- Display Todos ---
+st.subheader("Your Tasks")
 
 if todos:
     header_cols = st.columns([0.07, 0.43, 0.25, 0.25])
