@@ -4,6 +4,16 @@ import json
 import uuid
 from datetime import date, datetime
 
+# --- User Login ---
+st.sidebar.title("Login")
+username = st.sidebar.text_input("Enter your username")
+
+if not username:
+    st.warning("👤 Please enter your username in the sidebar to continue.")
+    st.stop()
+
+st.session_state["username"] = username
+
 # --- Helpers ---
 def make_id():
     return str(uuid.uuid4())
@@ -13,7 +23,7 @@ def ensure_id(todo):
         todo["id"] = make_id()
 
 # --- Load todos ---
-raw_todos = functions.get_todos()
+raw_todos = functions.get_todos(username)
 
 todos = []
 for t in raw_todos:
@@ -33,7 +43,7 @@ for t in raw_todos:
 # --- Save todos ---
 def save_todos():
     data = [json.dumps(t) + "\n" for t in todos]
-    functions.write_todos(data)
+    functions.write_todos(data, username)
 
 # --- Add todo ---
 def add_todo():
@@ -67,7 +77,6 @@ def delete_selected():
         global todos
         todos = [t for t in todos if t["id"] not in set(selected_ids)]
         save_todos()
-        # No st.experimental_rerun(), Streamlit reruns automatically after interaction
         st.session_state["selected_delete"] = []
 
 # --- Page Title ---
@@ -92,7 +101,6 @@ if todos:
     header_cols[2].markdown("**Due Date (DD/MM/YYYY)**")
     header_cols[3].markdown("**Progress (%)**")
 
-    # Track selected todos to delete
     if "selected_delete" not in st.session_state:
         st.session_state["selected_delete"] = []
 
@@ -165,7 +173,6 @@ else:
 st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
 st.subheader("Add a New Task")
 
-# --- Text Input for Task Name ---
 def trigger_date_picker():
     st.session_state["show_date_prompt"] = True
 
@@ -176,17 +183,14 @@ st.text_input(
     on_change=trigger_date_picker
 )
 
-# --- Show Prompt if user pressed Enter ---
 if st.session_state.get("show_date_prompt"):
     st.markdown("🗓️ **Please select a due date below before adding the task.**")
     st.session_state["show_date_prompt"] = False
 
-# --- Date input ---
 st.date_input(
     label="Select Due Date (DD/MM/YYYY)",
     key="new_due_date",
     format="DD/MM/YYYY"
 )
 
-# --- Add Task Button ---
 st.button("➕ Add Task", on_click=add_todo)
