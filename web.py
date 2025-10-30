@@ -12,10 +12,28 @@ def ensure_id(todo):
     if "id" not in todo or not todo["id"]:
         todo["id"] = make_id()
 
-# --- Load todos ---
-raw_todos = functions.get_todos()
+# --- Page Title ---
+st.markdown(
+    "<h1 style='color: teal; text-align: center; margin-bottom: 0px;'>Team Todo Planner</h1>",
+    unsafe_allow_html=True
+)
+st.markdown(
+    "<p style='text-align: center; color: gray; margin-top: 0px;'>Stay productive and organized!</p>",
+    unsafe_allow_html=True
+)
+st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
 
+# --- Login Section ---
+username = st.text_input("👤 Enter your name or ID:", key="user_name")
+
+if not username:
+    st.warning("Please enter your name to access your personal planner.")
+    st.stop()
+
+# --- Load Todos ---
+raw_todos = functions.get_todos(username)
 todos = []
+
 for t in raw_todos:
     try:
         obj = json.loads(t)
@@ -30,12 +48,12 @@ for t in raw_todos:
     except json.JSONDecodeError:
         todos.append({"task": t.strip(), "due": "", "progress": 0, "id": make_id()})
 
-# --- Save todos ---
+# --- Save Todos ---
 def save_todos():
     data = [json.dumps(t) + "\n" for t in todos]
-    functions.write_todos(data)
+    functions.write_todos(data, username)
 
-# --- Add todo ---
+# --- Add Todo ---
 def add_todo():
     task = st.session_state.get("new_todo", "").strip()
     due = st.session_state.get("new_due_date")
@@ -47,7 +65,6 @@ def add_todo():
         st.warning("⚠️ Please select a due date.")
         return
 
-    # Check if due date already passed
     if due < date.today():
         st.session_state["invalid_due_date"] = True
         return
@@ -65,21 +82,9 @@ def add_todo():
     st.session_state["new_due_date"] = None
     st.rerun()
 
-# --- Page Title ---
-st.markdown(
-    "<h1 style='color: teal; text-align: center; margin-bottom: 0px;'>Todo Planner</h1>",
-    unsafe_allow_html=True
-)
-st.markdown(
-    "<p style='text-align: center; color: gray; margin-top: 0px;'>Stay productive and organized!</p>",
-    unsafe_allow_html=True
-)
-st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
-
 # --- Display Todos ---
-st.subheader("Your Tasks")
+st.subheader(f"Your Tasks, {username}")
 st.markdown("<p style='text-align: center; color: gray;'>Click checkbox to delete</p>", unsafe_allow_html=True)
-
 
 if todos:
     header_cols = st.columns([0.07, 0.43, 0.25, 0.25])
@@ -167,7 +172,6 @@ else:
 st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
 st.subheader("Add a New Task")
 
-# --- Text Input for Task Name ---
 def trigger_date_picker():
     st.session_state["show_date_prompt"] = True
 
@@ -178,21 +182,17 @@ st.text_input(
     on_change=trigger_date_picker
 )
 
-# --- Show Prompt if user pressed Enter ---
 if st.session_state.get("show_date_prompt"):
     st.markdown("🗓️ **Please select a due date below before adding the task.**")
     st.session_state["show_date_prompt"] = False
 
-# --- Date input ---
 st.date_input(
     label="Select Due Date (DD/MM/YYYY)",
     key="new_due_date",
     format="DD/MM/YYYY"
 )
 
-# --- Show error if invalid date was chosen ---
 if st.session_state.get("invalid_due_date"):
     st.error("⚠️ The selected due date has already passed. Please choose a future date.")
 
-# --- Add Task Button ---
 st.button("➕ Add Task", on_click=add_todo)
