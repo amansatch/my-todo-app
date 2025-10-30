@@ -53,9 +53,18 @@ if "username" in st.session_state:
         st.success("You have been logged out.")
         st.stop()
 
-# --- Require login before showing main app ---
-if "username" not in st.session_state or not st.session_state["username"]:
-    st.stop()
+with login_tab:
+    st.text_input("Username", key="login_user")
+    st.text_input("Password", type="password", key="login_pass")
+
+    if st.button("🔓 Login"):
+        if functions.authenticate(st.session_state["login_user"], st.session_state["login_pass"]):
+            st.session_state["username"] = st.session_state["login_user"]
+            with open("active_user.txt", "w") as f:
+                f.write(st.session_state["username"])
+            st.rerun()
+        else:
+            st.error("Invalid username or password.")
 
 # --- Load username ---
 username = st.session_state["username"]
