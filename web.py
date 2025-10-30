@@ -85,7 +85,7 @@ if st.button("🗑️ Delete Selected Tasks"):
     if delete_ids:
         todos = [t for t in todos if t["id"] not in set(delete_ids)]
         save_todos()
-        st.experimental_rerun()  # safe here, only called after button click
+        st.success(f"Deleted {len(delete_ids)} task(s).")
 
 # --- Add New Task Section ---
 st.markdown("<hr>", unsafe_allow_html=True)
