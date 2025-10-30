@@ -59,15 +59,16 @@ def add_todo():
     save_todos()
     st.session_state["new_todo"] = ""
     st.session_state["new_due_date"] = None
-    st.experimental_rerun()  # refresh page after adding
 
 # --- Delete selected todos ---
-def delete_selected(selected_ids):
-    global todos
+def delete_selected():
+    selected_ids = st.session_state.get("selected_delete", [])
     if selected_ids:
+        global todos
         todos = [t for t in todos if t["id"] not in set(selected_ids)]
         save_todos()
-        st.experimental_rerun()  # refresh page after deletion
+        # No st.experimental_rerun(), Streamlit reruns automatically after interaction
+        st.session_state["selected_delete"] = []
 
 # --- Page Title ---
 st.markdown(
@@ -91,69 +92,72 @@ if todos:
     header_cols[2].markdown("**Due Date (DD/MM/YYYY)**")
     header_cols[3].markdown("**Progress (%)**")
 
-    selected_to_delete = []
+    # Track selected todos to delete
+    if "selected_delete" not in st.session_state:
+        st.session_state["selected_delete"] = []
 
     for todo in todos:
         ensure_id(todo)
         tid = todo["id"]
 
-        with st.container():
-            col1, col2, col3, col4 = st.columns([0.07, 0.43, 0.25, 0.25])
+        col1, col2, col3, col4 = st.columns([0.07, 0.43, 0.25, 0.25])
 
-            with col1:
-                chk_val = st.checkbox("", key=f"chk_{tid}")
-                if chk_val:
-                    selected_to_delete.append(tid)
+        with col1:
+            chk_val = st.checkbox("", key=f"chk_{tid}")
+            if chk_val:
+                if tid not in st.session_state["selected_delete"]:
+                    st.session_state["selected_delete"].append(tid)
+            else:
+                if tid in st.session_state["selected_delete"]:
+                    st.session_state["selected_delete"].remove(tid)
 
-            with col2:
-                task_text = st.text_input(
-                    "",
-                    value=todo.get("task", ""),
-                    key=f"task_{tid}",
-                    label_visibility="collapsed"
-                )
+        with col2:
+            task_text = st.text_input(
+                "",
+                value=todo.get("task", ""),
+                key=f"task_{tid}",
+                label_visibility="collapsed"
+            )
 
-            with col3:
-                due_str = ""
-                if todo.get("due"):
-                    try:
-                        due_date = datetime.strptime(todo["due"], "%Y-%m-%d")
-                        due_str = due_date.strftime("%d/%m/%Y")
-                    except Exception:
-                        due_str = ""
-                entered_due = st.text_input(
-                    "",
-                    value=due_str,
-                    key=f"due_{tid}",
-                    label_visibility="collapsed",
-                    placeholder="DD/MM/YYYY"
-                )
-                parsed_due = ""
-                if entered_due.strip():
-                    try:
-                        parsed_due = datetime.strptime(entered_due.strip(), "%d/%m/%Y").strftime("%Y-%m-%d")
-                    except ValueError:
-                        st.warning(f"⚠️ Invalid date format in task {todo['task']}. Use DD/MM/YYYY.")
-                        parsed_due = todo.get("due", "")
+        with col3:
+            due_str = ""
+            if todo.get("due"):
+                try:
+                    due_date = datetime.strptime(todo["due"], "%Y-%m-%d")
+                    due_str = due_date.strftime("%d/%m/%Y")
+                except Exception:
+                    due_str = ""
+            entered_due = st.text_input(
+                "",
+                value=due_str,
+                key=f"due_{tid}",
+                label_visibility="collapsed",
+                placeholder="DD/MM/YYYY"
+            )
+            parsed_due = ""
+            if entered_due.strip():
+                try:
+                    parsed_due = datetime.strptime(entered_due.strip(), "%d/%m/%Y").strftime("%Y-%m-%d")
+                except ValueError:
+                    st.warning(f"⚠️ Invalid date format in task {todo['task']}. Use DD/MM/YYYY.")
+                    parsed_due = todo.get("due", "")
 
-            with col4:
-                progress = st.slider(
-                    "",
-                    0,
-                    100,
-                    value=int(todo.get("progress", 0)),
-                    key=f"prog_{tid}",
-                    label_visibility="collapsed"
-                )
+        with col4:
+            progress = st.slider(
+                "",
+                0,
+                100,
+                value=int(todo.get("progress", 0)),
+                key=f"prog_{tid}",
+                label_visibility="collapsed"
+            )
 
-            todo["task"] = task_text.strip()
-            todo["due"] = parsed_due
-            todo["progress"] = progress
+        todo["task"] = task_text.strip()
+        todo["due"] = parsed_due
+        todo["progress"] = progress
 
-    # --- Delete Button ---
-    st.button("🗑️ Delete Selected", on_click=delete_selected, args=(selected_to_delete,))
+    st.button("🗑️ Delete Selected", on_click=delete_selected)
     save_todos()
-
 else:
     st.info("No tasks yet. Add one below!")
 
