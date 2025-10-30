@@ -24,14 +24,13 @@ with login_tab:
     st.text_input("Username", key="login_user")
     st.text_input("Password", type="password", key="login_pass")
     if st.button("🔓 Login"):
-        if functions.authenticate(st.session_state["login_user"], st.session_state["login_pass"]):
-            st.session_state["username"] = st.session_state["login_user"]
-            with open("active_user.txt", "w") as f:
-                f.write(st.session_state["username"])
-            st.success(f"Welcome back, {st.session_state['username']}!")
-        else:
-            st.error("Invalid username or password.")
-
+    if functions.authenticate(st.session_state["login_user"], st.session_state["login_pass"]):
+        st.session_state["username"] = st.session_state["login_user"]
+        with open("active_user.txt", "w") as f:
+            f.write(st.session_state["username"])
+        st.rerun()  # 🔁 Force rerun so username is available immediately
+    else:
+        st.error("Invalid username or password.")
 with register_tab:
     st.text_input("New Username", key="reg_user")
     st.text_input("New Password", type="password", key="reg_pass")
