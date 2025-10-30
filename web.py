@@ -118,11 +118,6 @@ def delete_selected():
         save_todos()
         st.session_state["selected_delete"] = []
 
-# --- Require login before showing main app ---
-if "username" not in st.session_state or not st.session_state["username"]:
-    st.warning("👤 Please log in to continue.")
-    st.stop()
-    
 # --- Page Title & Welcome ---
 st.markdown("<h1 style='color: teal; text-align: center;'>Todo Planner</h1>", unsafe_allow_html=True)
 if username:
