@@ -31,32 +31,6 @@ def save_todos():
     data = [json.dumps(t) + "\n" for t in todos]
     functions.write_todos(data)
 
-# --- Add todo ---
-def add_todo():
-    task = st.session_state.get("new_todo", "").strip()
-    due = st.session_state.get("new_due_date")
-
-    if not task:
-        st.warning("⚠️ Please enter a task name.")
-        return
-    if not due:
-        st.warning("⚠️ Please select a due date.")
-        return
-    if due < date.today():
-        st.warning("⚠️ The selected due date has already passed.")
-        return
-
-    todos.append({
-        "task": task,
-        "due": due.strftime("%Y-%m-%d"),
-        "progress": 0,
-        "id": make_id()
-    })
-    save_todos()
-    st.session_state["new_todo"] = ""
-    st.session_state["new_due_date"] = None
-    st.experimental_rerun()  # safe, only after Add Task button
-
 # --- Page Title ---
 st.markdown("<h1 style='color: teal; text-align: center;'>Todo Planner</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: gray;'>Stay productive and organized!</p>", unsafe_allow_html=True)
@@ -66,7 +40,7 @@ st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
 st.subheader("Your Tasks")
 st.markdown("<p style='text-align: center; color: gray;'>Click checkbox to select tasks to delete</p>", unsafe_allow_html=True)
 
-delete_ids = []
+delete_ids = st.session_state.get("delete_ids", [])
 
 if todos:
     header_cols = st.columns([0.07, 0.43, 0.25, 0.25])
@@ -82,8 +56,11 @@ if todos:
         col1, col2, col3, col4 = st.columns([0.07, 0.43, 0.25, 0.25])
 
         with col1:
-            if st.checkbox("", key=f"chk_{tid}"):
+            checked = st.checkbox("", key=f"chk_{tid}")
+            if checked and tid not in delete_ids:
                 delete_ids.append(tid)
+            elif not checked and tid in delete_ids:
+                delete_ids.remove(tid)
 
         with col2:
             task_text = st.text_input("", value=todo["task"], key=f"task_{tid}", label_visibility="collapsed")
@@ -112,6 +89,7 @@ if todos:
         todo["due"] = parsed_due
         todo["progress"] = progress
 
+    st.session_state["delete_ids"] = delete_ids
     save_todos()
 
 else:
@@ -121,14 +99,28 @@ else:
 if st.button("🗑️ Delete Selected Tasks"):
     if delete_ids:
         todos[:] = [t for t in todos if t["id"] not in set(delete_ids)]
+        st.session_state["delete_ids"] = []
         save_todos()
         st.success(f"Deleted {len(delete_ids)} task(s).")
-        st.experimental_rerun()  # safe here, after button click
 
 # --- Add New Task Section ---
 st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
 st.subheader("Add a New Task")
 
-st.text_input(label="Task Name", placeholder="Type your task here...", key="new_todo")
-st.date_input(label="Select Due Date (DD/MM/YYYY)", key="new_due_date", format="DD/MM/YYYY")
-st.button("➕ Add Task", on_click=add_todo)
+task_name = st.text_input(label="Task Name", placeholder="Type your task here...", key="new_todo")
+due_date = st.date_input(label="Select Due Date (DD/MM/YYYY)", key="new_due_date", format="DD/MM/YYYY")
+
+if st.button("➕ Add Task"):
+    if not task_name.strip():
+        st.warning("⚠️ Please enter a task name.")
+    elif due_date < date.today():
+        st.warning("⚠️ The selected due date has already passed.")
+    else:
+        todos.append({
+            "task": task_name.strip(),
+            "due": due_date.strftime("%Y-%m-%d"),
+            "progress": 0,
+            "id": make_id()
+        })
+        save_todos()
+        st.success("Task added successfully.")
