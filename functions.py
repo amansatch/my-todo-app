@@ -1,5 +1,5 @@
-import json
 import hashlib
+import json
 
 USER_FILE = "users.json"
 
@@ -25,7 +25,21 @@ def authenticate(username, password):
 def register_user(username, password):
     users = load_users()
     if username in users:
-        return False  # Already exists
+        return False
     users[username] = hash_password(password)
     save_users(users)
     return True
+
+def get_todos(username):
+    filepath = f"todos_{username}.txt"
+    try:
+        with open(filepath, 'r') as file_local:
+            todos_local = file_local.readlines()
+        return todos_local
+    except FileNotFoundError:
+        return []
+
+def write_todos(todos_arg, username):
+    filepath = f"todos_{username}.txt"
+    with open(filepath, 'w') as file:
+        file.writelines(todos_arg)
