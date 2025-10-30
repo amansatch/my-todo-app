@@ -120,7 +120,7 @@ st.markdown(
 
 username = st.session_state.get("username", "")
 st.markdown(
-    f"<p style='text-align: center; color: gray; margin-top: 0px;'>Welcome, <b>{username if username else 'Guest'}</b>! Stay productive and organized.</p>",
+    f"<p style='text-align: center; color: gray; margin-top: 0px;' Stay productive and organized.</p>",
     unsafe_allow_html=True
 )
 
