@@ -1,20 +1,13 @@
-import os
+FILEPATH = "todos.txt"
 
-def get_todos(username, basepath="data"):
-    os.makedirs(basepath, exist_ok=True)
-    filepath = os.path.join(basepath, f"{username}.txt")
+def get_todos(filepath=FILEPATH):
+    try:
+        with open(filepath, 'r') as file_local:
+            todos_local = file_local.readlines()
+        return todos_local
+    except FileNotFoundError:
+        return []  # Return empty list if file doesn't exist
 
-    if not os.path.exists(filepath):
-        open(filepath, 'w').close()
-
-    with open(filepath, 'r') as file:
-        todos_local = file.readlines()
-    return todos_local
-
-
-def write_todos(todos_arg, username, basepath="data"):
-    os.makedirs(basepath, exist_ok=True)
-    filepath = os.path.join(basepath, f"{username}.txt")
-
+def write_todos(todos_arg, filepath=FILEPATH):
     with open(filepath, 'w') as file:
         file.writelines(todos_arg)
