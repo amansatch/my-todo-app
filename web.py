@@ -12,8 +12,12 @@ def ensure_id(todo):
     if "id" not in todo or not todo["id"]:
         todo["id"] = make_id()
 
-# --- Load todos ---
-raw_todos = functions.get_todos()
+# --- Load todos safely ---
+try:
+    raw_todos = functions.get_todos()
+except Exception:
+    raw_todos = []  # File missing or unreadable
+
 todos = []
 for t in raw_todos:
     try:
@@ -45,6 +49,8 @@ def add_todo():
     if not due:
         st.warning("⚠️ Please select a due date.")
         return
+
+    # Check if due date already passed
     if due < date.today():
         st.session_state["invalid_due_date"] = True
         return
@@ -60,6 +66,7 @@ def add_todo():
     save_todos()
     st.session_state["new_todo"] = ""
     st.session_state["new_due_date"] = None
+    st.experimental_rerun()  # safer than st.rerun()
 
 # --- Page Title ---
 st.markdown(
@@ -84,6 +91,7 @@ if todos:
     header_cols[3].markdown("**Progress (%)**")
 
     delete_ids = []
+
     for idx, todo in enumerate(todos):
         ensure_id(todo)
         tid = todo["id"]
@@ -149,6 +157,7 @@ if todos:
                 if k in st.session_state:
                     del st.session_state[k]
         save_todos()
+        globals()["todos"] = todos
         st.experimental_rerun()
 
     save_todos()
@@ -159,6 +168,7 @@ else:
 st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
 st.subheader("Add a New Task")
 
+# --- Text Input for Task Name ---
 def trigger_date_picker():
     st.session_state["show_date_prompt"] = True
 
@@ -169,48 +179,21 @@ st.text_input(
     on_change=trigger_date_picker
 )
 
+# --- Show Prompt if user pressed Enter ---
 if st.session_state.get("show_date_prompt"):
     st.markdown("🗓️ **Please select a due date below before adding the task.**")
     st.session_state["show_date_prompt"] = False
 
+# --- Date input ---
 st.date_input(
     label="Select Due Date (DD/MM/YYYY)",
     key="new_due_date",
     format="DD/MM/YYYY"
 )
 
+# --- Show error if invalid date was chosen ---
 if st.session_state.get("invalid_due_date"):
     st.error("⚠️ The selected due date has already passed. Please choose a future date.")
 
+# --- Add Task Button ---
 st.button("➕ Add Task", on_click=add_todo)
-
-# --- Download & Upload Buttons ---
-st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
-st.subheader("Save or Load Your Tasks")
-
-# Download
-def download_todos():
-    data = "".join([json.dumps(t) + "\n" for t in todos])
-    st.download_button("💾 Download My Todos", data=data, file_name="todos.txt", mime="text/plain")
-
-download_todos()
-
-# Upload
-uploaded_file = st.file_uploader("📂 Upload Your Todos File", type="txt")
-if uploaded_file:
-    try:
-        content = uploaded_file.read().decode("utf-8").splitlines()
-        new_todos = []
-        for t in content:
-            try:
-                obj = json.loads(t)
-                ensure_id(obj)
-                new_todos.append(obj)
-            except json.JSONDecodeError:
-                new_todos.append({"task": t.strip(), "due": "", "progress": 0, "id": make_id()})
-        todos = new_todos
-        save_todos()
-        st.success("✅ Todos loaded successfully!")
-        st.experimental_rerun()
-    except Exception as e:
-        st.error(f"⚠️ Error loading file: {e}")
