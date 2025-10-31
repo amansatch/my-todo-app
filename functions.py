@@ -13,8 +13,12 @@ def load_users():
         with open(USER_FILE, "w") as f:
             f.write("{}")
         return {}
-    with open(USER_FILE, "r") as f:
-        return json.load(f)
+    try:
+        with open(USER_FILE, "r") as f:
+            data = json.load(f)
+            return data if isinstance(data, dict) else {}
+    except json.JSONDecodeError:
+        return {}
 
 def save_users(users):
     with open(USER_FILE, "w") as f:
@@ -23,8 +27,8 @@ def save_users(users):
 def authenticate(username, password):
     if not username or not password:
         return False
-    users = load_users()
     username = username.strip().lower()
+    users = load_users()
     hashed = hash_password(password)
     return users.get(username) == hashed
 
@@ -38,3 +42,22 @@ def register_user(username, password):
     users[username] = hash_password(password)
     save_users(users)
     return True
+
+def get_todos(username):
+    if not username:
+        return []
+    username = username.strip().lower()
+    filepath = os.path.join(BASE_DIR, f"todos_{username}.txt")
+    try:
+        with open(filepath, "r") as f:
+            return f.readlines()
+    except FileNotFoundError:
+        return []
+
+def write_todos(todos_list, username):
+    if not username:
+        return
+    username = username.strip().lower()
+    filepath = os.path.join(BASE_DIR, f"todos_{username}.txt")
+    with open(filepath, "w") as f:
+        f.writelines(todos_list)
