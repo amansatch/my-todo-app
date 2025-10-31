@@ -1,6 +1,6 @@
 import streamlit as st
 import uuid
-from datetime import date, datetime
+from datetime import date
 import os
 
 # --- Hardcoded Users ---
@@ -148,7 +148,7 @@ if todos:
         with col4:
             progress = st.slider("", 0, 100, value=todo["progress"], key=f"prog_{tid}", label_visibility="collapsed")
 
-        # ✅ Update the todos list directly
+        # ✅ This line updates the todos list directly
         todos[i] = {
             "task": task_text.strip(),
             "due": due_input.strip(),
