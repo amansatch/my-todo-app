@@ -2,7 +2,9 @@ import hashlib
 import json
 import os
 
-USER_FILE = "users.json"
+# Get the directory where this file (functions.py) is located
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+USER_FILE = os.path.join(BASE_DIR, "users.json")
 
 
 def hash_password(password):
@@ -53,7 +55,7 @@ def register_user(username, password):
     username = username.strip().lower()
     users = load_users()
 
-    # Check again after cleaning
+    # Prevent duplicates
     if username in users:
         return False
 
@@ -67,7 +69,7 @@ def get_todos(username):
     if not username:
         return []
     username = username.strip().lower()
-    filepath = f"todos_{username}.txt"
+    filepath = os.path.join(BASE_DIR, f"todos_{username}.txt")
     try:
         with open(filepath, 'r') as file_local:
             return file_local.readlines()
@@ -80,6 +82,6 @@ def write_todos(todos_arg, username):
     if not username:
         return
     username = username.strip().lower()
-    filepath = f"todos_{username}.txt"
+    filepath = os.path.join(BASE_DIR, f"todos_{username}.txt")
     with open(filepath, 'w') as file:
         file.writelines(todos_arg)
