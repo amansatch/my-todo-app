@@ -18,7 +18,7 @@ with login_tab:
     password = st.text_input("Password", type="password", key="login_pass")
     if st.button("🔓 Login"):
         if functions.authenticate(username, password):
-            st.session_state["username"] = username
+            st.session_state["username"] = username.strip().lower()
             st.rerun()
         else:
             st.error("Invalid username or password.")
@@ -28,9 +28,9 @@ with register_tab:
     new_pass = st.text_input("New Password", type="password", key="reg_pass")
     if st.button("📝 Register"):
         if functions.register_user(new_user, new_pass):
-            st.success("User registered! You can now log in.")
+            st.success("✅ User registered successfully! You can now log in.")
         else:
-            st.warning("Username already exists or invalid input.")
+            st.warning("⚠️ Username already exists or invalid input.")
 
 # --- Logout ---
 if "username" in st.session_state:
@@ -42,11 +42,10 @@ if "username" in st.session_state:
         st.stop()
 
 # --- Require login before showing main app ---
-if "username" not in st.session_state:
+username = st.session_state.get("username")
+if not username:
     st.warning("👤 Please log in to continue.")
     st.stop()
-
-username = st.session_state["username"]
 
 # --- Helpers ---
 def make_id():
