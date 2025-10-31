@@ -45,7 +45,7 @@ def register_user(username: str, password: str) -> bool:
     users[username] = hash_password(password)
     save_users(users)
 
-    # Create an empty todo file for the user
+    # Create empty todo file for user
     filepath = os.path.join(TODO_DIR, f"todos_{username}.txt")
     open(filepath, "a").close()
 
@@ -56,8 +56,15 @@ def authenticate(username: str, password: str) -> bool:
     """Check username/password match."""
     username = username.strip().lower()
     users = load_users()
-    hashed = hash_password(password)
-    return users.get(username) == hashed
+
+    # Explicitly check username existence and password match
+    if username not in users:
+        return False
+
+    hashed_input = hash_password(password)
+    stored_hash = users[username]
+
+    return hashed_input == stored_hash
 
 
 def delete_user(username: str) -> bool:
