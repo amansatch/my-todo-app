@@ -154,6 +154,9 @@ if todos:
         todo["task"] = task_text.strip()
 
     st.button("🗑️ Delete Selected", on_click=delete_selected)
+    if st.button("💾 Save Changes"):
+    save_todos()
+    st.success("Changes saved!")
     save_todos()
 else:
     st.info("No tasks yet. Add one below!")
