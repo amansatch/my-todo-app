@@ -1,7 +1,6 @@
 import streamlit as st
 import uuid
 from datetime import date
-
 import os
 
 # --- Hardcoded Users ---
@@ -56,11 +55,11 @@ if st.sidebar.button("🔓 Login"):
     else:
         st.sidebar.error("Invalid username or password.")
 
-# --- Logout ---
+# --- Sidebar Logout ---
 if "username" in st.session_state:
     if st.sidebar.button("🚪 Logout"):
-        st.session_state.clear()
-        st.stop()
+        st.session_state.clear()  # remove all session state
+        st.experimental_rerun()   # refresh to login screen
 
 # --- Require login ---
 if "username" not in st.session_state:
