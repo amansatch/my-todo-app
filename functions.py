@@ -1,7 +1,7 @@
 # --- Hardcoded users ---
 # username:password
 USERS = {
-    "amanstrat": "yngwie11",
+    "amanstrat": "yngwie",
     "user2": "password2"
 }
 
