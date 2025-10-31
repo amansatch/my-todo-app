@@ -1,6 +1,7 @@
 import streamlit as st
 import uuid
 from datetime import date
+import json
 import os
 
 # --- Hardcoded Users ---
@@ -14,29 +15,16 @@ def make_id():
 
 # --- Todo Functions ---
 def get_todos(username):
-    """Return a list of dicts: {'task': ..., 'due': ..., 'progress': ..., 'id': ...}"""
-    todos = []
-    filepath = f"todos_{username}.txt"
-    if os.path.exists(filepath):
-        with open(filepath, "r") as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                parts = line.split("||")
-                task = parts[0]
-                due = parts[1] if len(parts) > 1 else ""
-                progress = int(parts[2]) if len(parts) > 2 else 0
-                tid = parts[3] if len(parts) > 3 else make_id()
-                todos.append({"task": task, "due": due, "progress": progress, "id": tid})
-    return todos
+    filepath = f"todos_{username}.json"
+    if not os.path.exists(filepath):
+        return []
+    with open(filepath, "r") as f:
+        return json.load(f)
 
 def write_todos(todos_arg, username):
-    filepath = f"todos_{username}.txt"
+    filepath = f"todos_{username}.json"
     with open(filepath, "w") as f:
-        for t in todos_arg:
-            line = f"{t['task']}||{t['due']}||{t['progress']}||{t['id']}\n"
-            f.write(line)
+        json.dump(todos_arg, f, indent=2)
 
 # --- Sidebar Login ---
 st.sidebar.title("🔐 Account Access")
@@ -148,7 +136,7 @@ if todos:
         with col4:
             progress = st.slider("", 0, 100, value=todo["progress"], key=f"prog_{tid}", label_visibility="collapsed")
 
-        # ✅ This line updates the todos list directly
+        # ✅ Update todos list directly
         todos[i] = {
             "task": task_text.strip(),
             "due": due_input.strip(),
