@@ -1,6 +1,6 @@
 import streamlit as st
 import uuid
-from datetime import date
+from datetime import date, datetime
 import os
 
 # --- Hardcoded Users ---
@@ -58,8 +58,11 @@ if st.sidebar.button("🔓 Login"):
 # --- Sidebar Logout ---
 if "username" in st.session_state:
     if st.sidebar.button("🚪 Logout"):
-        st.session_state.clear()  # remove all session state
-        st.rerun()   # refresh to login screen
+        # Clear only session state keys we use
+        for key in ["username", "username_input", "password_input", "new_todo", "new_due_date", "selected_delete", "show_date_prompt"]:
+            if key in st.session_state:
+                del st.session_state[key]
+        st.stop()  # Stop execution so login appears
 
 # --- Require login ---
 if "username" not in st.session_state:
@@ -91,7 +94,7 @@ def add_todo():
         return
     todos.append({
         "task": task,
-        "due": due.strftime("%Y-%m-%d"),
+        "due": due.strftime("%d/%m/%Y"),  # keep DD/MM/YYYY
         "progress": 0,
         "id": make_id()
     })
@@ -118,8 +121,8 @@ if todos:
     header_cols = st.columns([0.07, 0.43, 0.25, 0.25])
     header_cols[0].markdown("**Done**")
     header_cols[1].markdown("**Task**")
-    header_cols[2].markdown("**Due Date**")
-    header_cols[3].markdown("**Progress**")
+    header_cols[2].markdown("**Due Date (DD/MM/YYYY)**")
+    header_cols[3].markdown("**Progress (%)**")
 
     if "selected_delete" not in st.session_state:
         st.session_state["selected_delete"] = []
@@ -168,5 +171,5 @@ if st.session_state.get("show_date_prompt"):
     st.markdown("🗓️ **Please select a due date below before adding the task.**")
     st.session_state["show_date_prompt"] = False
 
-st.date_input("Select Due Date", key="new_due_date")
+st.date_input("Select Due Date (DD/MM/YYYY)", key="new_due_date", format="DD/MM/YYYY")
 st.button("➕ Add Task", on_click=add_todo)
