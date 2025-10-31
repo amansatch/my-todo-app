@@ -126,7 +126,7 @@ if todos:
     if "selected_delete" not in st.session_state:
         st.session_state["selected_delete"] = []
 
-    for todo in todos:
+    for i, todo in enumerate(todos):
         tid = todo["id"]
         col1, col2, col3, col4 = st.columns([0.07, 0.43, 0.25, 0.25])
 
@@ -144,13 +144,17 @@ if todos:
 
         with col3:
             due_input = st.text_input("", value=todo["due"], key=f"due_{tid}", label_visibility="collapsed")
-            todo["due"] = due_input.strip()
 
         with col4:
             progress = st.slider("", 0, 100, value=todo["progress"], key=f"prog_{tid}", label_visibility="collapsed")
-            todo["progress"] = progress
 
-        todo["task"] = task_text.strip()
+        # ✅ Update the todos list directly
+        todos[i] = {
+            "task": task_text.strip(),
+            "due": due_input.strip(),
+            "progress": progress,
+            "id": tid
+        }
 
     st.button("🗑️ Delete Selected", on_click=delete_selected)
 
