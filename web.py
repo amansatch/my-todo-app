@@ -13,7 +13,6 @@ USERS = {
 def make_id():
     return str(uuid.uuid4())
 
-# --- Todo Functions ---
 def get_todos(username):
     filepath = f"todos_{username}.json"
     if not os.path.exists(filepath):
@@ -38,13 +37,8 @@ def write_todos(todos_arg, username):
 # --- Sidebar Login ---
 st.sidebar.title("🔐 Account Access")
 
-if "username_input" not in st.session_state:
-    st.session_state["username_input"] = ""
-if "password_input" not in st.session_state:
-    st.session_state["password_input"] = ""
-
-username_input = st.sidebar.text_input("Username", key="username_input")
-password_input = st.sidebar.text_input("Password", type="password", key="password_input")
+username_input = st.sidebar.text_input("Username")
+password_input = st.sidebar.text_input("Password", type="password")
 
 if st.sidebar.button("🔓 Login"):
     if username_input in USERS and password_input == USERS[username_input]:
@@ -52,15 +46,12 @@ if st.sidebar.button("🔓 Login"):
     else:
         st.sidebar.error("Invalid username or password.")
 
-# --- Sidebar Logout ---
 if "username" in st.session_state:
     if st.sidebar.button("🚪 Logout"):
-        for key in ["username", "username_input", "password_input", "new_todo", "new_due_date", "selected_delete", "show_date_prompt"]:
-            if key in st.session_state:
-                del st.session_state[key]
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
         st.stop()
 
-# --- Require login ---
 if "username" not in st.session_state:
     st.warning("👤 Please log in to continue.")
     st.stop()
