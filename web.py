@@ -58,11 +58,10 @@ if st.sidebar.button("🔓 Login"):
 # --- Sidebar Logout ---
 if "username" in st.session_state:
     if st.sidebar.button("🚪 Logout"):
-        # Clear only session state keys we use
         for key in ["username", "username_input", "password_input", "new_todo", "new_due_date", "selected_delete", "show_date_prompt"]:
             if key in st.session_state:
                 del st.session_state[key]
-        st.stop()  # Stop execution so login appears
+        st.stop()
 
 # --- Require login ---
 if "username" not in st.session_state:
@@ -94,7 +93,7 @@ def add_todo():
         return
     todos.append({
         "task": task,
-        "due": due.strftime("%d/%m/%Y"),  # keep DD/MM/YYYY
+        "due": due.strftime("%d/%m/%Y"),
         "progress": 0,
         "id": make_id()
     })
