@@ -5,6 +5,7 @@ from datetime import date, datetime
 import os
 
 # --- Hardcoded Users ---
+# username:password pairs
 USERS = {
     "amanstrat": "12345"
 }
@@ -21,20 +22,23 @@ def ensure_id(todo):
 def get_todos(username):
     if not username:
         return []
+    username = username.strip().lower()
     filepath = f"todos_{username}.txt"
-    if os.path.exists(filepath):
+    try:
         with open(filepath, "r") as f:
             return f.readlines()
-    return []
+    except FileNotFoundError:
+        return []
 
 def write_todos(todos_arg, username):
     if not username:
         return
+    username = username.strip().lower()
     filepath = f"todos_{username}.txt"
     with open(filepath, "w") as f:
         f.writelines(todos_arg)
 
-# --- Sidebar Login ---
+# --- Sidebar Login & Logout ---
 st.sidebar.title("🔐 Account Access")
 
 if "username_input" not in st.session_state:
@@ -42,44 +46,57 @@ if "username_input" not in st.session_state:
 if "password_input" not in st.session_state:
     st.session_state["password_input"] = ""
 
-username_input = st.sidebar.text_input("Username", key="username_input")
-password_input = st.sidebar.text_input("Password", type="password", key="password_input")
+# If user is not logged in, show login form
+if "username" not in st.session_state:
+    username_input = st.sidebar.text_input("Username", key="username_input")
+    password_input = st.sidebar.text_input("Password", type="password", key="password_input")
 
-if st.sidebar.button("🔓 Login"):
-    if username_input in USERS and password_input == USERS[username_input]:
-        st.session_state["username"] = username_input
-    else:
-        st.sidebar.error("Invalid username or password.")
+    if st.sidebar.button("🔓 Login"):
+        if username_input in USERS and password_input == USERS[username_input]:
+            st.session_state["username"] = username_input
+            st.sidebar.success(f"Logged in as {username_input}")
+        else:
+            st.sidebar.error("Invalid username or password.")
+
+# If user is logged in, show logout button
+else:
+    username = st.session_state["username"]
+    st.sidebar.success(f"Logged in as {username}")
+
+    if st.sidebar.button("🚪 Logout"):
+        st.session_state.pop("username")
+        st.sidebar.info("You have been logged out.")
+        st.experimental_rerun()  # refresh page to show login form
 
 # --- Require login before showing main app ---
 if "username" not in st.session_state:
     st.warning("👤 Please log in to continue.")
     st.stop()
+else:
+    username = st.session_state["username"]
 
-username = st.session_state["username"]
-st.sidebar.success(f"Logged in as {username}")
-
-# --- Load Todos ---
+# --- Load todos ---
 raw_todos = get_todos(username)
 todos = []
 for t in raw_todos:
     t = t.strip()
-    try:
-        obj = json.loads(t)
-        obj.setdefault("task", t)
-        obj.setdefault("due", "")
-        obj.setdefault("progress", 0)
-        ensure_id(obj)
-        todos.append(obj)
-    except json.JSONDecodeError:
-        todos.append({"task": t, "due": "", "progress": 0, "id": make_id()})
+    if t:  # avoid empty lines
+        try:
+            obj = json.loads(t)
+            obj.setdefault("task", t)
+            obj.setdefault("due", "")
+            obj.setdefault("progress", 0)
+            ensure_id(obj)
+            todos.append(obj)
+        except json.JSONDecodeError:
+            todos.append({"task": t, "due": "", "progress": 0, "id": make_id()})
 
-# --- Save Todos ---
+# --- Save todos ---
 def save_todos():
     data = [json.dumps(t) + "\n" for t in todos]
     write_todos(data, username)
 
-# --- Add Todo ---
+# --- Add todo ---
 def add_todo():
     task = st.session_state.get("new_todo", "").strip()
     due = st.session_state.get("new_due_date")
@@ -102,7 +119,7 @@ def add_todo():
     st.session_state["new_todo"] = ""
     st.session_state["new_due_date"] = None
 
-# --- Delete Selected Todos ---
+# --- Delete selected todos ---
 def delete_selected():
     selected_ids = st.session_state.get("selected_delete", [])
     if selected_ids:
