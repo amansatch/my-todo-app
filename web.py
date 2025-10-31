@@ -6,7 +6,8 @@ import os
 # --- Hardcoded Users ---
 USERS = {
     "amanstrat": "yngwie",
-     "limay": "limay123"
+     "limay": "limay123",
+    "noorfazlyaton": "noor0309"
 }
 
 # --- Helpers ---
