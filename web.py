@@ -1,45 +1,53 @@
 import streamlit as st
 import uuid
-from datetime import date
-import json
+from datetime import date, datetime
 import os
 
 # --- Hardcoded Users ---
 USERS = {
-    "amanstrat": "yngwie",
-     "limay": "limay123"
+    "amanstrat": "yngwie"
 }
 
 # --- Helpers ---
 def make_id():
     return str(uuid.uuid4())
 
+# --- Todo Functions ---
 def get_todos(username):
-    filepath = f"todos_{username}.json"
-    if not os.path.exists(filepath):
-        return []
-    try:
+    """Return a list of dicts: {'task': ..., 'due': ..., 'progress': ..., 'id': ...}"""
+    todos = []
+    filepath = f"todos_{username}.txt"
+    if os.path.exists(filepath):
         with open(filepath, "r") as f:
-            content = f.read().strip()
-            if not content:
-                return []
-            return json.loads(content)
-    except json.JSONDecodeError:
-        return []
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                parts = line.split("||")
+                task = parts[0]
+                due = parts[1] if len(parts) > 1 else ""
+                progress = int(parts[2]) if len(parts) > 2 else 0
+                tid = parts[3] if len(parts) > 3 else make_id()
+                todos.append({"task": task, "due": due, "progress": progress, "id": tid})
+    return todos
 
 def write_todos(todos_arg, username):
-    filepath = f"todos_{username}.json"
-    try:
-        with open(filepath, "w") as f:
-            json.dump(todos_arg, f, indent=2)
-    except Exception as e:
-        st.error(f"❌ Failed to write JSON: {e}")
+    filepath = f"todos_{username}.txt"
+    with open(filepath, "w") as f:
+        for t in todos_arg:
+            line = f"{t['task']}||{t['due']}||{t['progress']}||{t['id']}\n"
+            f.write(line)
 
 # --- Sidebar Login ---
 st.sidebar.title("🔐 Account Access")
 
-username_input = st.sidebar.text_input("Username")
-password_input = st.sidebar.text_input("Password", type="password")
+if "username_input" not in st.session_state:
+    st.session_state["username_input"] = ""
+if "password_input" not in st.session_state:
+    st.session_state["password_input"] = ""
+
+username_input = st.sidebar.text_input("Username", key="username_input")
+password_input = st.sidebar.text_input("Password", type="password", key="password_input")
 
 if st.sidebar.button("🔓 Login"):
     if username_input in USERS and password_input == USERS[username_input]:
@@ -47,12 +55,16 @@ if st.sidebar.button("🔓 Login"):
     else:
         st.sidebar.error("Invalid username or password.")
 
+# --- Sidebar Logout ---
 if "username" in st.session_state:
     if st.sidebar.button("🚪 Logout"):
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
-        st.stop()
+        # Clear only session state keys we use
+        for key in ["username", "username_input", "password_input", "new_todo", "new_due_date", "selected_delete", "show_date_prompt"]:
+            if key in st.session_state:
+                del st.session_state[key]
+        st.stop()  # Stop execution so login appears
 
+# --- Require login ---
 if "username" not in st.session_state:
     st.warning("👤 Please log in to continue.")
     st.stop()
@@ -82,7 +94,7 @@ def add_todo():
         return
     todos.append({
         "task": task,
-        "due": due.strftime("%d/%m/%Y"),
+        "due": due.strftime("%d/%m/%Y"),  # keep DD/MM/YYYY
         "progress": 0,
         "id": make_id()
     })
@@ -115,7 +127,7 @@ if todos:
     if "selected_delete" not in st.session_state:
         st.session_state["selected_delete"] = []
 
-    for i, todo in enumerate(todos):
+    for todo in todos:
         tid = todo["id"]
         col1, col2, col3, col4 = st.columns([0.07, 0.43, 0.25, 0.25])
 
@@ -133,23 +145,16 @@ if todos:
 
         with col3:
             due_input = st.text_input("", value=todo["due"], key=f"due_{tid}", label_visibility="collapsed")
+            todo["due"] = due_input.strip()
 
         with col4:
             progress = st.slider("", 0, 100, value=todo["progress"], key=f"prog_{tid}", label_visibility="collapsed")
+            todo["progress"] = progress
 
-        # ✅ Update todos list directly
-        todos[i] = {
-            "task": task_text.strip(),
-            "due": due_input.strip(),
-            "progress": progress,
-            "id": tid
-        }
+        todo["task"] = task_text.strip()
 
     st.button("🗑️ Delete Selected", on_click=delete_selected)
-
-    if st.button("💾 Save Changes"):
-        save_todos()
-        st.success("Changes saved!")
+    save_todos()
 else:
     st.info("No tasks yet. Add one below!")
 
