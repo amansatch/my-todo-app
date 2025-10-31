@@ -1,70 +1,51 @@
-import os
-import json
 import hashlib
+import json
+import os
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-USER_FILE = os.path.join(BASE_DIR, "users.json")
+# --- TEMPORARY HARDCODED USERS ---
+HARDCODED_USERS = {
+    "testuser": "5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9a6e1f3f0f7"  # password: 12345
+}
 
 def hash_password(password):
-    """Hash password with SHA256."""
     return hashlib.sha256(password.encode()).hexdigest()
 
 def load_users():
-    """Load user data from users.json safely."""
-    if not os.path.exists(USER_FILE):
-        with open(USER_FILE, "w") as f:
-            f.write("{}")
-        return {}
-    try:
-        with open(USER_FILE, "r") as f:
-            data = json.load(f)
-            return data if isinstance(data, dict) else {}
-    except json.JSONDecodeError:
-        return {}
+    # Ignore JSON, return hardcoded users
+    return HARDCODED_USERS
 
 def save_users(users):
-    """Save user data to users.json."""
-    with open(USER_FILE, "w") as f:
-        json.dump(users, f, indent=4)
+    # Do nothing, since we're using hardcoded users
+    pass
 
 def authenticate(username, password):
-    """Return True if username/password match."""
     if not username or not password:
         return False
     username = username.strip().lower()
-    users = load_users()
     hashed = hash_password(password)
+    users = load_users()
     return users.get(username) == hashed
 
 def register_user(username, password):
-    """Register new user; return False if exists."""
-    if not username or not password:
-        return False
-    username = username.strip().lower()
-    users = load_users()
-    if username in users:
-        return False
-    users[username] = hash_password(password)
-    save_users(users)
-    return True
+    # Disable registration temporarily
+    return False
 
+# Todos functions remain the same
 def get_todos(username):
-    """Return list of todos for given username."""
     if not username:
         return []
     username = username.strip().lower()
-    filepath = os.path.join(BASE_DIR, f"todos_{username}.txt")
+    filepath = f"todos_{username}.txt"
     try:
-        with open(filepath, "r") as f:
-            return f.readlines()
+        with open(filepath, 'r') as file_local:
+            return file_local.readlines()
     except FileNotFoundError:
         return []
 
 def write_todos(todos_list, username):
-    """Write todos for the given username."""
     if not username:
         return
     username = username.strip().lower()
-    filepath = os.path.join(BASE_DIR, f"todos_{username}.txt")
-    with open(filepath, "w") as f:
-        f.writelines(todos_list)
+    filepath = f"todos_{username}.txt"
+    with open(filepath, 'w') as file:
+        file.writelines(todos_list)
