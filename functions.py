@@ -1,7 +1,12 @@
 import hashlib
 import json
+import os
 
 USER_FILE = "users.json"
+TODO_DIR = "user_data"
+
+# Ensure the folder exists
+os.makedirs(TODO_DIR, exist_ok=True)
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -31,15 +36,14 @@ def register_user(username, password):
     return True
 
 def get_todos(username):
-    filepath = f"todos_{username}.txt"
+    filepath = os.path.join(TODO_DIR, f"todos_{username}.txt")
     try:
-        with open(filepath, 'r') as file_local:
-            todos_local = file_local.readlines()
-        return todos_local
+        with open(filepath, "r") as file_local:
+            return file_local.readlines()
     except FileNotFoundError:
         return []
 
 def write_todos(todos_arg, username):
-    filepath = f"todos_{username}.txt"
-    with open(filepath, 'w') as file:
+    filepath = os.path.join(TODO_DIR, f"todos_{username}.txt")
+    with open(filepath, "w") as file:
         file.writelines(todos_arg)
