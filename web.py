@@ -9,32 +9,28 @@ USERS = {
     "amanstrat": "12345"  # password is 12345
 }
 
-# --- Clean up any leftover flags ---
-for key in ["logged_out", "login_user", "login_pass", "reg_user", "reg_pass"]:
+# --- Clean up leftover flags ---
+for key in ["login_user", "login_pass"]:
     if key in st.session_state:
         del st.session_state[key]
 
-# --- Login & Registration Sidebar ---
+# --- Sidebar Login ---
 st.sidebar.title("🔐 Account Access")
-login_tab, register_tab = st.sidebar.tabs(["Login", "Register"])
 
-with login_tab:
-    username_input = st.text_input("Username", key="login_user")
-    password_input = st.text_input("Password", type="password", key="login_pass")
-    if st.button("🔓 Login"):
-        if username_input in USERS and password_input == USERS[username_input]:
-            st.session_state["username"] = username_input
-        else:
-            st.error("Invalid username or password.")
+username_input = st.sidebar.text_input("Username", key="login_user")
+password_input = st.sidebar.text_input("Password", type="password", key="login_pass")
 
-with register_tab:
-    st.info("⚠️ Registration disabled. Only admin can create users.")
+if st.sidebar.button("🔓 Login"):
+    if username_input in USERS and password_input == USERS[username_input]:
+        st.session_state["username"] = username_input
+    else:
+        st.sidebar.error("Invalid username or password.")
 
 # --- Logout ---
 if "username" in st.session_state:
     if st.sidebar.button("🚪 Logout"):
         st.session_state.clear()
-        st.success("You have been logged out.")
+        st.sidebar.success("You have been logged out.")
         st.stop()
 
 # --- Require login ---
@@ -83,7 +79,6 @@ for t in raw_todos:
 
 # --- Save todos ---
 def save_todos():
-    data = [json.dumps(t) + "\n" for t in todos]
     write_todos([t["task"] for t in todos], username)
 
 # --- Add todo ---
