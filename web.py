@@ -51,6 +51,13 @@ if st.sidebar.button("🔓 Login"):
     else:
         st.sidebar.error("Invalid username or password.")
 
+# --- LOGOUT ---
+if "username" in st.session_state:
+    if st.sidebar.button("🚪 Logout"):
+        st.session_state.pop("username")
+        st.sidebar.info("You have been logged out.")
+        st.stop()  # stop app to show login form
+
 # --- Require login before showing main app ---
 if "username" not in st.session_state:
     st.warning("👤 Please log in to continue.")
