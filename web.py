@@ -11,7 +11,7 @@ password = st.sidebar.text_input("Password", type="password", key="login_pass")
 if st.sidebar.button("🔓 Login"):
     if functions.authenticate(username, password):
         st.session_state["username"] = username.strip().lower()
-        st.experimental_rerun()
+        st.rerun()
     else:
         st.sidebar.error("Invalid username or password.")
 
