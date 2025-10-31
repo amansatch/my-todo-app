@@ -1,1 +1,2 @@
-
+{"task": "WFO", "due": "2025-10-31", "progress": 81, "id": "68c7e8d1-566e-4909-a9c4-f0f00dadf690"}
+{"task": "Macro EGIC", "due": "2025-10-31", "progress": 78, "id": "4aa4e8c4-1c28-41c4-a0e1-6ec44c0ad1e4"}
