@@ -4,11 +4,6 @@ import json
 import uuid
 from datetime import date, datetime
 
-# Clean up any leftover flags
-for key in ["logged_out", "login_user", "login_pass", "reg_user", "reg_pass"]:
-    if key in st.session_state:
-        del st.session_state[key]
-
 # --- Login & Registration ---
 st.sidebar.title("🔐 Account Access")
 login_tab, register_tab = st.sidebar.tabs(["Login", "Register"])
@@ -36,8 +31,6 @@ with register_tab:
 if "username" in st.session_state:
     if st.sidebar.button("🚪 Logout"):
         st.session_state.clear()
-        for key in ["login_user", "login_pass", "reg_user", "reg_pass"]:
-            st.session_state[key] = ""
         st.success("You have been logged out.")
         st.stop()
 
