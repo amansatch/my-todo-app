@@ -5,8 +5,6 @@ import os
 
 USER_FILE = "users.json"
 
-# ---------- Utility functions ----------
-
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
@@ -39,85 +37,69 @@ def register_user(username, password):
 def get_todos(username):
     filepath = f"todos_{username}.txt"
     try:
-        with open(filepath, "r") as f:
-            return f.readlines()
+        with open(filepath, 'r') as file_local:
+            todos_local = file_local.readlines()
+        return todos_local
     except FileNotFoundError:
         return []
 
-def write_todos(todos, username):
+def write_todos(todos_arg, username):
     filepath = f"todos_{username}.txt"
-    with open(filepath, "w") as f:
-        f.writelines(todos)
+    with open(filepath, 'w') as file:
+        file.writelines(todos_arg)
 
-# ---------- Streamlit UI ----------
+# --------------------- STREAMLIT UI ---------------------
 
-st.set_page_config(page_title="My To-Do App", page_icon="📝")
-
-# Initialize session state
 if "username" not in st.session_state:
-    st.session_state.username = None
+    st.session_state.username = ""
 
-st.title("📝 Simple To-Do App")
+st.title("Simple Todo App")
 
-# ---------- Logged-in view ----------
-if st.session_state.username:
+# --- LOGIN & REGISTER PAGE ---
+if st.session_state.username == "":
+    action = st.radio("Choose action:", ["Login", "Register"])
+
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+
+    if action == "Login":
+        if st.button("Login"):
+            if authenticate(username, password):
+                st.session_state.username = username.strip().lower()
+                st.success("Login successful")
+                st.experimental_rerun()
+            else:
+                st.error("Invalid username or password")
+    else:
+        if st.button("Register"):
+            if register_user(username, password):
+                st.success("Registration successful, please log in.")
+            else:
+                st.warning("Username already exists.")
+
+# --- TODO PAGE (AFTER LOGIN) ---
+else:
     username = st.session_state.username
-    st.success(f"Welcome, **{username}**!")
+    st.write(f"Logged in as: **{username}**")
 
     todos = get_todos(username)
 
-    # Display todos with delete buttons
-    st.subheader("Your To-Dos")
-    if not todos:
-        st.info("No todos yet — add one below!")
-    else:
-        for i, todo in enumerate(todos):
-            col1, col2 = st.columns([0.85, 0.15])
-            with col1:
-                st.write(f"{i+1}. {todo.strip()}")
-            with col2:
-                if st.button("❌", key=f"del_{i}"):
-                    todos.pop(i)
-                    write_todos(todos, username)
-                    st.experimental_rerun()
+    # Show todos
+    st.write("Your Todos:")
+    for todo in todos:
+        st.write("-", todo.strip())
 
-    # Add new todo
-    new_todo = st.text_input("Add a new task:")
+    # Add todo
+    new_todo = st.text_input("New todo:")
     if st.button("Add"):
         if new_todo.strip():
             todos.append(new_todo.strip() + "\n")
             write_todos(todos, username)
-            st.success("Added!")
             st.experimental_rerun()
         else:
-            st.warning("Please type something first.")
+            st.warning("Todo cannot be empty.")
 
-    # Logout
+    # Logout button
     if st.button("Logout"):
-        st.session_state.username = None
+        st.session_state.username = ""
         st.experimental_rerun()
-
-# ---------- Login / Register view ----------
-else:
-    tab1, tab2 = st.tabs(["Login", "Register"])
-
-    with tab1:
-        st.subheader("Login")
-        username = st.text_input("Username", key="login_user")
-        password = st.text_input("Password", type="password", key="login_pass")
-        if st.button("Login"):
-            if authenticate(username, password):
-                st.session_state.username = username.strip().lower()
-                st.experimental_rerun()
-            else:
-                st.error("Invalid username or password")
-
-    with tab2:
-        st.subheader("Register")
-        new_user = st.text_input("Choose username", key="reg_user")
-        new_pass = st.text_input("Choose password", type="password", key="reg_pass")
-        if st.button("Register"):
-            if register_user(new_user, new_pass):
-                st.success("Registration successful! You can now log in.")
-            else:
-                st.error("Username already exists — please choose another.")
