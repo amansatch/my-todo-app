@@ -2,7 +2,7 @@
 # username:password
 USERS = {
     "amanstrat": "yngwie",
-    "user2": "password2"
+    "limay": "limay123"
 }
 
 # --- Todo functions ---
