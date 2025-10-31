@@ -5,10 +5,41 @@ from datetime import date, datetime
 import os
 
 # --- Hardcoded Users ---
-# username:password pairs
 USERS = {
-    "amanstrat": "12345"
+    "amanstrat": "12345"  # password is 12345
 }
+
+# --- Clean up leftover flags ---
+for key in ["login_user", "login_pass"]:
+    if key in st.session_state:
+        del st.session_state[key]
+
+# --- Sidebar Login ---
+st.sidebar.title("🔐 Account Access")
+
+username_input = st.sidebar.text_input("Username", key="login_user")
+password_input = st.sidebar.text_input("Password", type="password", key="login_pass")
+
+if st.sidebar.button("🔓 Login"):
+    if username_input in USERS and password_input == USERS[username_input]:
+        st.session_state["username"] = username_input
+    else:
+        st.sidebar.error("Invalid username or password.")
+
+# --- Logout ---
+if "username" in st.session_state:
+    if st.sidebar.button("🚪 Logout"):
+        st.session_state.clear()
+        st.sidebar.success("You have been logged out.")
+        st.stop()
+
+# --- Require login ---
+if "username" not in st.session_state:
+    st.warning("👤 Please log in to continue.")
+    st.stop()
+
+username = st.session_state["username"]
+st.sidebar.success(f"Logged in as {username}")
 
 # --- Helpers ---
 def make_id():
@@ -20,81 +51,35 @@ def ensure_id(todo):
 
 # --- Todo Functions ---
 def get_todos(username):
-    if not username:
-        return []
-    username = username.strip().lower()
     filepath = f"todos_{username}.txt"
-    try:
+    if os.path.exists(filepath):
         with open(filepath, "r") as f:
-            return f.readlines()
-    except FileNotFoundError:
-        return []
+            return [line.strip() for line in f.readlines() if line.strip()]
+    return []
 
 def write_todos(todos_arg, username):
-    if not username:
-        return
-    username = username.strip().lower()
     filepath = f"todos_{username}.txt"
     with open(filepath, "w") as f:
-        f.writelines(todos_arg)
-
-# --- Sidebar Login & Logout ---
-st.sidebar.title("🔐 Account Access")
-
-if "username_input" not in st.session_state:
-    st.session_state["username_input"] = ""
-if "password_input" not in st.session_state:
-    st.session_state["password_input"] = ""
-
-# If user is not logged in, show login form
-if "username" not in st.session_state:
-    username_input = st.sidebar.text_input("Username", key="username_input")
-    password_input = st.sidebar.text_input("Password", type="password", key="password_input")
-
-    if st.sidebar.button("🔓 Login"):
-        if username_input in USERS and password_input == USERS[username_input]:
-            st.session_state["username"] = username_input
-            st.sidebar.success(f"Logged in as {username_input}")
-        else:
-            st.sidebar.error("Invalid username or password.")
-
-# If user is logged in, show logout button
-else:
-    username = st.session_state["username"]
-    st.sidebar.success(f"Logged in as {username}")
-
-    if st.sidebar.button("🚪 Logout"):
-        st.session_state.pop("username")
-        st.sidebar.info("You have been logged out.")
-        st.experimental_rerun()  # refresh page to show login form
-
-# --- Require login before showing main app ---
-if "username" not in st.session_state:
-    st.warning("👤 Please log in to continue.")
-    st.stop()
-else:
-    username = st.session_state["username"]
+        for t in todos_arg:
+            f.write(t + "\n")
 
 # --- Load todos ---
 raw_todos = get_todos(username)
 todos = []
 for t in raw_todos:
-    t = t.strip()
-    if t:  # avoid empty lines
-        try:
-            obj = json.loads(t)
-            obj.setdefault("task", t)
-            obj.setdefault("due", "")
-            obj.setdefault("progress", 0)
-            ensure_id(obj)
-            todos.append(obj)
-        except json.JSONDecodeError:
-            todos.append({"task": t, "due": "", "progress": 0, "id": make_id()})
+    try:
+        obj = json.loads(t)
+        obj.setdefault("task", str(t).strip())
+        obj.setdefault("due", "")
+        obj.setdefault("progress", 0)
+        ensure_id(obj)
+        todos.append(obj)
+    except (json.JSONDecodeError, TypeError):
+        todos.append({"task": t.strip(), "due": "", "progress": 0, "id": make_id()})
 
 # --- Save todos ---
 def save_todos():
-    data = [json.dumps(t) + "\n" for t in todos]
-    write_todos(data, username)
+    write_todos([t["task"] for t in todos], username)
 
 # --- Add todo ---
 def add_todo():
