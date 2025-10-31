@@ -4,20 +4,42 @@ import uuid
 from datetime import date, datetime
 import os
 
-# --- Hardcoded user ---
-USERNAME = "amanstrat"
-PASSWORD = "12345"
+# --- Hardcoded Users ---
+USERS = {
+    "amanstrat": "12345"  # password is 12345
+}
 
-# --- Login ---
-if "username" not in st.session_state:
-    st.sidebar.subheader("🔐 Login")
-    username_input = st.sidebar.text_input("Username")
-    password_input = st.sidebar.text_input("Password", type="password")
-    if st.sidebar.button("🔓 Login"):
-        if username_input == USERNAME and password_input == PASSWORD:
+# --- Clean up any leftover flags ---
+for key in ["logged_out", "login_user", "login_pass", "reg_user", "reg_pass"]:
+    if key in st.session_state:
+        del st.session_state[key]
+
+# --- Login & Registration Sidebar ---
+st.sidebar.title("🔐 Account Access")
+login_tab, register_tab = st.sidebar.tabs(["Login", "Register"])
+
+with login_tab:
+    username_input = st.text_input("Username", key="login_user")
+    password_input = st.text_input("Password", type="password", key="login_pass")
+    if st.button("🔓 Login"):
+        if username_input in USERS and password_input == USERS[username_input]:
             st.session_state["username"] = username_input
         else:
-            st.sidebar.error("Invalid username or password")
+            st.error("Invalid username or password.")
+
+with register_tab:
+    st.info("⚠️ Registration disabled. Only admin can create users.")
+
+# --- Logout ---
+if "username" in st.session_state:
+    if st.sidebar.button("🚪 Logout"):
+        st.session_state.clear()
+        st.success("You have been logged out.")
+        st.stop()
+
+# --- Require login ---
+if "username" not in st.session_state:
+    st.warning("👤 Please log in to continue.")
     st.stop()
 
 username = st.session_state["username"]
@@ -31,7 +53,7 @@ def ensure_id(todo):
     if "id" not in todo or not todo["id"]:
         todo["id"] = make_id()
 
-# --- Todo functions ---
+# --- Todo Functions ---
 def get_todos(username):
     filepath = f"todos_{username}.txt"
     if os.path.exists(filepath):
@@ -96,7 +118,7 @@ def delete_selected():
         save_todos()
         st.session_state["selected_delete"] = []
 
-# --- Your layout below stays exactly as before ---
+# --- Page Title ---
 st.markdown(
     "<h1 style='color: teal; text-align: center; margin-bottom: 0px;'>Todo Planner</h1>",
     unsafe_allow_html=True
@@ -107,6 +129,7 @@ st.markdown(
 )
 st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
 
+# --- Display Todos ---
 st.subheader("Your Tasks")
 if todos:
     header_cols = st.columns([0.07, 0.43, 0.25, 0.25])
@@ -164,6 +187,7 @@ if todos:
 else:
     st.info("No tasks yet. Add one below!")
 
+# --- Add New Task Section ---
 st.markdown("<hr style='border:1px solid #ccc'>", unsafe_allow_html=True)
 st.subheader("Add a New Task")
 
