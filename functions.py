@@ -2,8 +2,8 @@ import hashlib
 import json
 import os
 
-# Get the directory where this file (functions.py) is located
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Use current working directory (always writable on Streamlit Cloud)
+BASE_DIR = os.getcwd()
 USER_FILE = os.path.join(BASE_DIR, "users.json")
 
 
@@ -13,9 +13,10 @@ def hash_password(password):
 
 
 def load_users():
-    """Load user data from users.json (safe)."""
+    """Load user data safely."""
     if not os.path.exists(USER_FILE):
         return {}
+
     try:
         with open(USER_FILE, "r") as f:
             content = f.read().strip()
@@ -28,17 +29,13 @@ def load_users():
 
 
 def save_users(users):
-    """Write user data to file safely."""
-    tmp_file = USER_FILE + ".tmp"
-    with open(tmp_file, "w") as f:
+    """Save user data safely."""
+    with open(USER_FILE, "w") as f:
         json.dump(users, f, indent=4)
-        f.flush()
-        os.fsync(f.fileno())
-    os.replace(tmp_file, USER_FILE)
 
 
 def authenticate(username, password):
-    """Check username & password."""
+    """Check login credentials."""
     if not username or not password:
         return False
     users = load_users()
@@ -55,7 +52,6 @@ def register_user(username, password):
     username = username.strip().lower()
     users = load_users()
 
-    # Prevent duplicates
     if username in users:
         return False
 
@@ -65,23 +61,23 @@ def register_user(username, password):
 
 
 def get_todos(username):
-    """Load todos for this user."""
+    """Load todos for the specific user."""
     if not username:
         return []
     username = username.strip().lower()
     filepath = os.path.join(BASE_DIR, f"todos_{username}.txt")
     try:
-        with open(filepath, 'r') as file_local:
-            return file_local.readlines()
+        with open(filepath, 'r') as f:
+            return f.readlines()
     except FileNotFoundError:
         return []
 
 
-def write_todos(todos_arg, username):
-    """Write todos for this user."""
+def write_todos(todos, username):
+    """Save todos for the specific user."""
     if not username:
         return
     username = username.strip().lower()
     filepath = os.path.join(BASE_DIR, f"todos_{username}.txt")
-    with open(filepath, 'w') as file:
-        file.writelines(todos_arg)
+    with open(filepath, 'w') as f:
+        f.writelines(todos)
