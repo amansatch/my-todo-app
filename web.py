@@ -18,13 +18,22 @@ def get_todos(username):
     filepath = f"todos_{username}.json"
     if not os.path.exists(filepath):
         return []
-    with open(filepath, "r") as f:
-        return json.load(f)
+    try:
+        with open(filepath, "r") as f:
+            content = f.read().strip()
+            if not content:
+                return []
+            return json.loads(content)
+    except json.JSONDecodeError:
+        return []
 
 def write_todos(todos_arg, username):
     filepath = f"todos_{username}.json"
-    with open(filepath, "w") as f:
-        json.dump(todos_arg, f, indent=2)
+    try:
+        with open(filepath, "w") as f:
+            json.dump(todos_arg, f, indent=2)
+    except Exception as e:
+        st.error(f"❌ Failed to write JSON: {e}")
 
 # --- Sidebar Login ---
 st.sidebar.title("🔐 Account Access")
