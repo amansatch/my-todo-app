@@ -34,8 +34,8 @@ if "logged_in" not in st.session_state:
 
 # --- LOGIN PAGE ---
 if not st.session_state.logged_in:
-    st.title("🔐 Welcome to My Todo App")
-    st.write("Please login to manage your personal to-do list.")
+    st.title("🔐 Welcome to Team Todo App")
+    st.write("Please login to manage your Team to-do list.")
 
     username = st.text_input("👤 Username", placeholder="Enter your username", key="login_user")
     password = st.text_input("🔑 Password", type="password", placeholder="Enter your password", key="login_pass")
